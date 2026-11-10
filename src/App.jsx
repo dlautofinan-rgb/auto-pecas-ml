@@ -34,7 +34,11 @@ import {
   Percent,
   HelpCircle,
   Info,
-  CheckSquare
+  CheckSquare,
+  TrendingUp,
+  Calculator,
+  PieChart,
+  MessageSquare
 } from 'lucide-react';
 
 // --- CONFIGURAÇÃO FIREBASE ---
@@ -81,10 +85,10 @@ function detectCategoryFromTitle(title = '') {
 }
 
 const DEFAULT_PRODUCTS = [
-  { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v 3cc 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Ativo', date: '2026-11-10', conta: 'DL Auto Peças' },
-  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0 Comfort 12v 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Sob Revisão', date: '2026-11-10', conta: 'DL Auto Peças' },
-  { id: 'p3', sku: '12529', mlb: 'MLB5539289953', name: 'Trava Elétrica Tampa Traseira Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Pausado', date: '2026-11-10', conta: 'DL Auto Peças' },
-  { id: 'p4', sku: '12528', mlb: 'MLB7971719130', name: 'Flauta C/ Bicos Injetores Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Finalizado', date: '2026-11-10', conta: 'DL Auto Peças' }
+  { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v 3cc 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Ativo', price: 249.90, costPrice: 90.00, stock: 4, date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0 Comfort 12v 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Sob Revisão', price: 120.00, costPrice: 40.00, stock: 12, date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p3', sku: '12529', mlb: 'MLB5539289953', name: 'Trava Elétrica Tampa Traseira Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Pausado', price: 180.00, costPrice: 70.00, stock: 0, date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p4', sku: '12528', mlb: 'MLB7971719130', name: 'Flauta C/ Bicos Injetores Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Finalizado', price: 350.00, costPrice: 150.00, stock: 0, date: '2026-11-10', conta: 'DL Auto Peças' }
 ];
 
 const DEFAULT_SALES = [
@@ -318,6 +322,10 @@ export default function App() {
           <nav className="p-3 space-y-1">
             <NavItem id="sales-dashboard" label="Dashboard Faturamento & Vendas" icon={BarChart3} active={activeTab} setActive={setActiveTab} badge={salesList.length} />
             <NavItem id="import" label="Importar Peças & Anúncios" icon={FileSpreadsheet} active={activeTab} setActive={setActiveTab} badge={products.length} />
+            <NavItem id="price-monitor" label="Monitor de Preços (Buy Box)" icon={TrendingUp} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="margin-calculator" label="Simulador de Margem Líquida" icon={Calculator} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="faq-helper" label="FAQ & Compatibilidade (IA)" icon={MessageSquare} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="curva-abc" label="Curva ABC de Estoque" icon={PieChart} active={activeTab} setActive={setActiveTab} />
             <NavItem id="category-audit" label="Auditoria de Categorias" icon={CheckSquare} active={activeTab} setActive={setActiveTab} />
             <NavItem id="manage-sheets" label="Gerenciar / Excluir Planilhas" icon={Trash2} active={activeTab} setActive={setActiveTab} />
             <NavItem id="team-guide" label="Guia & Motivos de Status" icon={HelpCircle} active={activeTab} setActive={setActiveTab} />
@@ -371,6 +379,14 @@ export default function App() {
             darkMode={darkMode} 
           />
         )}
+
+        {activeTab === 'price-monitor' && <PriceMonitorTab products={products} setProducts={setProducts} darkMode={darkMode} />}
+
+        {activeTab === 'margin-calculator' && <MarginCalculatorTab products={products} darkMode={darkMode} />}
+
+        {activeTab === 'faq-helper' && <FaqHelperTab darkMode={darkMode} />}
+
+        {activeTab === 'curva-abc' && <CurvaAbcTab products={products} darkMode={darkMode} />}
 
         {activeTab === 'category-audit' && <CategoryAuditTab products={products} setProducts={setProducts} darkMode={darkMode} />}
 
@@ -484,6 +500,468 @@ function LoginScreen({ onLogin, darkMode, setDarkMode }) {
               Entrar no Sistema
             </button>
           </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// MÓDULO 2: MONITOR DE PREÇOS (BUY BOX)
+// ==========================================
+function PriceMonitorTab({ products, setProducts, darkMode }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [customPrices, setCustomPrices] = useState({});
+
+  const handlePriceChange = (id, newPrice) => {
+    setCustomPrices({ ...customPrices, [id]: Number(newPrice) });
+  };
+
+  const handleSavePrice = (id) => {
+    const val = customPrices[id];
+    if (val !== undefined) {
+      setProducts(products.map(p => p.id === id ? { ...p, price: val } : p));
+      alert('Preço atualizado com sucesso!');
+    }
+  };
+
+  const evaluated = products.map(p => {
+    const currentPrice = p.price || 150.00;
+    // Simulação de preço médio da concorrência baseado no nome
+    const marketAvg = Number((currentPrice * (0.85 + (p.name.length % 5) * 0.05)).toFixed(2));
+    const diff = currentPrice - marketAvg;
+    const diffPct = ((diff / marketAvg) * 100).toFixed(1);
+
+    let status = 'Competitivo';
+    let color = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+
+    if (diff > 15) {
+      status = 'Acima do Mercado (Risco)';
+      color = 'text-red-400 bg-red-500/10 border-red-500/20';
+    } else if (diff < -15) {
+      status = 'Abaixo do Preço (Margem Baixa)';
+      color = 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+    }
+
+    return { ...p, marketAvg, diffPct: Number(diffPct), status, color };
+  });
+
+  const filtered = evaluated.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">Monitor de Preços & Competitividade (Buy Box)</h2>
+        <p className="text-sm text-slate-400">Monitore se o preço das suas peças está alinhado com a concorrência do Mercado Livre.</p>
+      </div>
+
+      <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex items-center gap-4`}>
+        <Search className="w-4 h-4 text-slate-500" />
+        <input
+          type="text"
+          placeholder="Pesquisar por Peça ou SKU..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-transparent text-sm text-white focus:outline-none"
+        />
+      </div>
+
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
+              <tr>
+                <th className="p-4">SKU / Peça</th>
+                <th className="p-4">Seu Preço Atual</th>
+                <th className="p-4">Média Concorrência</th>
+                <th className="p-4">Status Buy Box</th>
+                <th className="p-4 text-center">Ajustar Preço</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50 text-xs">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="p-8 text-center text-slate-500">Nenhum anúncio encontrado.</td>
+                </tr>
+              ) : (
+                filtered.map(p => {
+                  const val = customPrices[p.id] !== undefined ? customPrices[p.id] : (p.price || 150);
+                  return (
+                    <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                      <td className="p-4">
+                        <div className="font-bold text-amber-400 font-mono">SKU: {p.sku}</div>
+                        <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
+                      </td>
+                      <td className="p-4 font-mono font-bold text-slate-100">
+                        R$ {Number(p.price || 150).toFixed(2)}
+                      </td>
+                      <td className="p-4 font-mono text-blue-400">
+                        R$ {p.marketAvg.toFixed(2)}
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-3 py-1 rounded-full font-bold border ${p.color} inline-block`}>
+                          {p.status} ({p.diffPct > 0 ? `+${p.diffPct}%` : `${p.diffPct}%`})
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={val}
+                            onChange={(e) => handlePriceChange(p.id, e.target.value)}
+                            className="w-24 p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white font-mono text-xs text-center"
+                          />
+                          <button
+                            onClick={() => handleSavePrice(p.id)}
+                            className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-lg transition-transform active:scale-95"
+                          >
+                            Salvar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// MÓDULO 4: SIMULADOR DE MARGEM LÍQUIDA
+// ==========================================
+function MarginCalculatorTab({ products, darkMode }) {
+  const [selectedSku, setSelectedSku] = useState(products[0]?.sku || '');
+  const [salePrice, setSalePrice] = useState(products[0]?.price || 200);
+  const [costPrice, setCostPrice] = useState(products[0]?.costPrice || 70);
+  const [adMode, setAdMode] = useState('premium'); // classic (11%) or premium (16%)
+  const [shippingCost, setShippingCost] = useState(25.00); // Frete grátis fixo simulado
+  const [taxRate, setTaxRate] = useState(4.0); // Simples Nacional %
+
+  const handleSelectProduct = (sku) => {
+    setSelectedSku(sku);
+    const found = products.find(p => p.sku === sku);
+    if (found) {
+      setSalePrice(found.price || 200);
+      setCostPrice(found.costPrice || 70);
+    }
+  };
+
+  const commissionRate = adMode === 'premium' ? 0.16 : 0.11;
+  const commissionValue = salePrice * commissionRate;
+  const taxValue = salePrice * (taxRate / 100);
+  const totalCost = Number(costPrice) + Number(shippingCost) + commissionValue + taxValue;
+  const netProfit = salePrice - totalCost;
+  const roi = costPrice > 0 ? ((netProfit / costPrice) * 100).toFixed(1) : 0;
+  const marginPct = salePrice > 0 ? ((netProfit / salePrice) * 100).toFixed(1) : 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">Simulador de Margem Líquida Real</h2>
+        <p className="text-sm text-slate-400">Calcule taxas de comissão do Mercado Livre, impostos, frete e descubra seu lucro líquido exato.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl text-xs`}>
+          <div>
+            <label className="text-slate-400 font-medium block mb-1">Selecionar Peça do Estoque</label>
+            <select
+              value={selectedSku}
+              onChange={(e) => handleSelectProduct(e.target.value)}
+              className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-semibold"
+            >
+              {products.map(p => (
+                <option key={p.id} value={p.sku}>SKU {p.sku} - {p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-slate-400 font-medium block mb-1">Preço de Venda Anunciado (R$)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={salePrice}
+              onChange={(e) => setSalePrice(Number(e.target.value))}
+              className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono"
+            />
+          </div>
+
+          <div>
+            <label className="text-slate-400 font-medium block mb-1">Custo de Aquisição / Compra (R$)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={costPrice}
+              onChange={(e) => setCostPrice(Number(e.target.value))}
+              className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono"
+            />
+          </div>
+
+          <div>
+            <label className="text-slate-400 font-medium block mb-1">Tipo de Anúncio no Mercado Livre</label>
+            <select
+              value={adMode}
+              onChange={(e) => setAdMode(e.target.value)}
+              className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-semibold"
+            >
+              <option value="premium">Premium (16% com parcelamento sem juros)</option>
+              <option value="classic">Clássico (11% sem parcelamento sem juros)</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-slate-400 font-medium block mb-1">Custo Envio Fixo (R$)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={shippingCost}
+                onChange={(e) => setShippingCost(Number(e.target.value))}
+                className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-slate-400 font-medium block mb-1">Imposto NFe (%)</label>
+              <input
+                type="number"
+                step="0.1"
+                value={taxRate}
+                onChange={(e) => setTaxRate(Number(e.target.value))}
+                className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-xl flex flex-col justify-center border-l-4 border-l-amber-400`}>
+            <div className="text-xs text-slate-400 font-semibold uppercase">Lucro Líquido Real</div>
+            <div className={`text-3xl font-black font-mono ${netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              R$ {netProfit.toFixed(2)}
+            </div>
+            <div className="text-xs text-slate-500">Valor que sobra limpo após taxas e custos</div>
+          </div>
+
+          <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-xl flex flex-col justify-center border-l-4 border-l-blue-400`}>
+            <div className="text-xs text-slate-400 font-semibold uppercase">Margem de Lucro & ROI</div>
+            <div className="text-3xl font-black font-mono text-blue-400">
+              {marginPct}% <span className="text-sm font-normal text-slate-400">(ROI: {roi}%)</span>
+            </div>
+            <div className="text-xs text-slate-500">Retorno sobre o capital investido</div>
+          </div>
+
+          <div className={`lg:col-span-2 p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-3 shadow-xl`}>
+            <h3 className="font-bold text-sm text-slate-300">Detalhamento dos Descontos no Preço de Venda</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
+              <div className="p-3 bg-slate-800/50 rounded-xl">
+                <div className="text-slate-400">Comissão ML</div>
+                <div className="text-red-400 font-bold mt-1">- R$ {commissionValue.toFixed(2)}</div>
+              </div>
+              <div className="p-3 bg-slate-800/50 rounded-xl">
+                <div className="text-slate-400">Imposto NFe</div>
+                <div className="text-red-400 font-bold mt-1">- R$ {taxValue.toFixed(2)}</div>
+              </div>
+              <div className="p-3 bg-slate-800/50 rounded-xl">
+                <div className="text-slate-400">Frete / Envios</div>
+                <div className="text-red-400 font-bold mt-1">- R$ {Number(shippingCost).toFixed(2)}</div>
+              </div>
+              <div className="p-3 bg-slate-800/50 rounded-xl">
+                <div className="text-slate-400">Custo da Peça</div>
+                <div className="text-red-400 font-bold mt-1">- R$ {Number(costPrice).toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// MÓDULO 5: FAQ & COMPATIBILIDADE (IA)
+// ==========================================
+function FaqHelperTab({ darkMode }) {
+  const [selectedBrand, setSelectedBrand] = useState('Hyundai');
+  const [copiedIndex, setCopiedIndex] = useState(null);
+
+  const faqDatabase = {
+    Hyundai: [
+      { q: "Serve no HB20 1.0 3 cilindros 2015?", a: "Sim! Compatível perfeitamente com motores Kappa 1.0 12V 3 cilindros dos anos 2015 a 2019." },
+      { q: "Acompanha nota fiscal e garantia?", a: "Sim, emitimos Nota Fiscal para CPF e CNPJ e o produto possui 3 meses de garantia contra defeitos de fabricação." }
+    ],
+    Volkswagen: [
+      { q: "Serve no Gol G5 1.0 Power 2011?", a: "Sim, peça original especificada para linha EA111 1.0 e 1.6 dos anos 2009 a 2012." },
+      { q: "Produto novo ou seminovo original?", a: "Trabalhamos com peças originais usadas revisadas de alta qualidade com procedência garantida e baixa quilometragem." }
+    ],
+    Chevrolet: [
+      { q: "Serve no Onix Joy 1.0 2018?", a: "Sim, compatível com a linha GM Onix e Prisma de 2013 até 2019 com motor SPE/4." },
+      { q: "O envio é feito no mesmo dia?", a: "Sim! Compras aprovadas até às 14h são postadas no mesmo dia útil pelo Mercado Coletas." }
+    ],
+    Fiat: [
+      { q: "Serve no Palio Fire 1.0 Evo 2013?", a: "Sim, compatível com motores Fire Evo 1.0 e 1.4 flex dos anos 2012 em diante." },
+      { q: "A peça vai com os sensores inclusos?", a: "Conforme fotos reais do anúncio. Verifique os conectores na imagem antes de concluir a compra." }
+    ]
+  };
+
+  const handleCopy = (text, idx) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIndex(idx);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">FAQ Inteligente & Respostas de Compatibilidade</h2>
+        <p className="text-sm text-slate-400">Respostas rápidas e padronizadas para a sua equipe copiar e colar nas perguntas dos compradores.</p>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {Object.keys(faqDatabase).map(brand => (
+          <button
+            key={brand}
+            onClick={() => setSelectedBrand(brand)}
+            className={`p-3 rounded-xl font-bold text-xs transition-all border ${
+              selectedBrand === brand ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-md' : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700'
+            }`}
+          >
+            {brand}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-4">
+        {faqDatabase[selectedBrand].map((item, idx) => (
+          <div key={idx} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-3 shadow-lg`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Pergunta Comum: {item.q}</span>
+              <button
+                onClick={() => handleCopy(item.a, idx)}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-transform active:scale-95"
+              >
+                {copiedIndex === idx ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedIndex === idx ? 'Copiado!' : 'Copiar Resposta'}</span>
+              </button>
+            </div>
+            <div className="p-3.5 bg-slate-800/40 rounded-xl border border-slate-800 text-xs text-slate-200 font-medium">
+              {item.a}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// MÓDULO 6: CURVA ABC DE ESTOQUE
+// ==========================================
+function CurvaAbcTab({ products, darkMode }) {
+  const evaluated = products.map((p, i) => {
+    // Simulação de faturamento simulado por peça com base no estoque e preço
+    const simulatedRevenue = (p.price || 150) * (p.stock || 5) * (i % 2 === 0 ? 3 : 1);
+    return { ...p, simulatedRevenue };
+  }).sort((a, b) => b.simulatedRevenue - a.simulatedRevenue);
+
+  const totalRev = evaluated.reduce((acc, p) => acc + p.simulatedRevenue, 0) || 1;
+
+  let accumulated = 0;
+  const abcClassified = evaluated.map(p => {
+    accumulated += p.simulatedRevenue;
+    const pct = (accumulated / totalRev) * 100;
+    let curva = 'A';
+    let badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+    if (pct > 80 && pct <= 95) {
+      curva = 'B';
+      badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+    } else if (pct > 95) {
+      curva = 'C';
+      badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+    }
+    return { ...p, curva, badgeColor };
+  });
+
+  const countA = abcClassified.filter(p => p.curva === 'A').length;
+  const countB = abcClassified.filter(p => p.curva === 'B').length;
+  const countC = abcClassified.filter(p => p.curva === 'C').length;
+
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">Curva ABC de Estoque & Giro de Peças</h2>
+        <p className="text-sm text-slate-400">Classificação automática do estoque para identificar peças de alto giro (Curva A) e peças paradas (Curva C).</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-emerald-400`}>
+          <div className="text-xs text-slate-400 font-semibold">Curva A (Alto Giro - 80% Faturamento)</div>
+          <div className="text-2xl font-black font-mono text-emerald-400">{countA} peças</div>
+          <div className="text-[10px] text-slate-500">Nunca deixe faltar em estoque</div>
+        </div>
+
+        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-blue-400`}>
+          <div className="text-xs text-slate-400 font-semibold">Curva B (Giro Moderado - 15%)</div>
+          <div className="text-2xl font-black font-mono text-blue-400">{countB} peças</div>
+          <div className="text-[10px] text-slate-500">Reposição controlada</div>
+        </div>
+
+        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-amber-400`}>
+          <div className="text-xs text-slate-400 font-semibold">Curva C (Baixo Giro / Paradas - 5%)</div>
+          <div className="text-2xl font-black font-mono text-amber-400">{countC} peças</div>
+          <div className="text-[10px] text-slate-500">Recomendado fazer liquidação</div>
+        </div>
+      </div>
+
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
+              <tr>
+                <th className="p-4">SKU / Peça</th>
+                <th className="p-4">Estoque Atual</th>
+                <th className="p-4">Preço (R$)</th>
+                <th className="p-4">Faturamento Estimado</th>
+                <th className="p-4 text-center">Classificação ABC</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50 text-xs">
+              {abcClassified.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="p-8 text-center text-slate-500">Nenhum produto cadastrado.</td>
+                </tr>
+              ) : (
+                abcClassified.map(p => (
+                  <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="p-4">
+                      <div className="font-bold text-amber-400 font-mono">SKU: {p.sku}</div>
+                      <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
+                    </td>
+                    <td className="p-4 font-mono font-bold text-slate-300">
+                      {p.stock !== undefined ? p.stock : 5} un
+                    </td>
+                    <td className="p-4 font-mono text-slate-200">
+                      R$ {Number(p.price || 150).toFixed(2)}
+                    </td>
+                    <td className="p-4 font-mono text-emerald-400 font-bold">
+                      R$ {p.simulatedRevenue.toFixed(2)}
+                    </td>
+                    <td className="p-4 text-center">
+                      <span className={`px-3 py-1 rounded-full font-bold border ${p.badgeColor} inline-block`}>
+                        Curva {p.curva}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -989,6 +1467,9 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           const status = String(row['Status'] || 'Ativo');
           const conta = String(row['Conta'] || 'DL Auto Peças');
           const currentCat = String(row['Categoria'] || 'Acessórios para Veículos > Peças Gerais');
+          const price = Number(row['Preço'] || 150.00);
+          const costPrice = Number(row['Custo'] || 60.00);
+          const stock = Number(row['Estoque'] || 5);
           
           let rawDate = row['Data da Publicação'] || row['Data'] || new Date().toISOString();
           let formattedDate = new Date().toISOString().slice(0, 10);
@@ -1010,6 +1491,9 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
             name,
             currentCat,
             status,
+            price,
+            costPrice,
+            stock,
             date: formattedDate,
             conta
           };
@@ -1101,7 +1585,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
               <tr>
                 <th className="p-4">SKU / MLB</th>
                 <th className="p-4">Título do Anúncio</th>
-                <th className="p-4">Conta</th>
+                <th className="p-4">Preço / Estoque</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Data Publicação</th>
                 <th className="p-4 text-center">Ações</th>
@@ -1120,7 +1604,10 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
                       <div className="text-slate-500">MLB: {p.mlb || 'N/D'}</div>
                     </td>
                     <td className="p-4 font-semibold text-slate-200">{p.name}</td>
-                    <td className="p-4 text-xs text-slate-400">{p.conta || 'DL Auto Peças'}</td>
+                    <td className="p-4 font-mono text-xs">
+                      <div className="text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</div>
+                      <div className="text-slate-400">Estoque: {p.stock !== undefined ? p.stock : 5} un</div>
+                    </td>
                     <td className="p-4">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                         p.status === 'Ativo' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
@@ -1625,7 +2112,7 @@ function PhotoEditorTab({ darkMode }) {
 // ==========================================
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
-    product || { sku: '', mlb: '', name: '', status: 'Ativo', date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '' }
+    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '' }
   );
 
   const handleSubmit = (e) => {
@@ -1653,6 +2140,20 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
             <div>
               <label className="text-slate-400 font-medium">MLB</label>
               <input type="text" value={formData.mlb} onChange={(e) => setFormData({ ...formData, mlb: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-slate-400 font-medium">Preço (R$)</label>
+              <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+            </div>
+            <div>
+              <label className="text-slate-400 font-medium">Custo (R$)</label>
+              <input type="number" step="0.01" value={formData.costPrice} onChange={(e) => setFormData({ ...formData, costPrice: Number(e.target.value) })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+            </div>
+            <div>
+              <label className="text-slate-400 font-medium">Estoque</label>
+              <input type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
             </div>
           </div>
           <div className="pt-3 flex gap-2">
