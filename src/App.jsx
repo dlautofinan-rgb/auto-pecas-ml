@@ -48,7 +48,8 @@ import {
   Zap,
   Tag,
   ShieldAlert,
-  FileCode
+  FileCode,
+  Store
 } from 'lucide-react';
 
 // --- CONFIGURAÇÃO FIREBASE ---
@@ -95,10 +96,10 @@ function detectCategoryFromTitle(title = '') {
 }
 
 const DEFAULT_PRODUCTS = [
-  { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v 3cc 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Ativo', price: 249.90, costPrice: 90.00, stock: 2, date: '2026-11-10', conta: 'DL Auto Peças' },
-  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0 Comfort 12v 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Sob Revisão', price: 120.00, costPrice: 40.00, stock: 1, date: '2026-11-10', conta: 'DL Auto Peças' },
-  { id: 'p3', sku: '12529', mlb: 'MLB5539289953', name: 'Trava Elétrica Tampa Traseira Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Pausado', price: 180.00, costPrice: 70.00, stock: 0, date: '2026-11-10', conta: 'DL Auto Peças' },
-  { id: 'p4', sku: '12528', mlb: 'MLB7971719130', name: 'Flauta C/ Bicos Injetores Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Finalizado', price: 350.00, costPrice: 150.00, stock: 0, date: '2026-11-10', conta: 'DL Auto Peças' }
+  { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v 3cc 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Ativo', price: 249.90, wholesalePrice: 210.00, wholesaleMinQty: 4, costPrice: 90.00, stock: 2, date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0 Comfort 12v 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Sob Revisão', price: 120.00, wholesalePrice: 100.00, wholesaleMinQty: 4, costPrice: 40.00, stock: 1, date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p3', sku: '12529', mlb: 'MLB5539289953', name: 'Trava Elétrica Tampa Traseira Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Pausado', price: 180.00, wholesalePrice: 150.00, wholesaleMinQty: 4, costPrice: 70.00, stock: 0, date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p4', sku: '12528', mlb: 'MLB7971719130', name: 'Flauta C/ Bicos Injetores Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Finalizado', price: 350.00, wholesalePrice: 299.00, wholesaleMinQty: 4, costPrice: 150.00, stock: 0, date: '2026-11-10', conta: 'DL Auto Peças' }
 ];
 
 const DEFAULT_SALES = [
@@ -332,6 +333,7 @@ export default function App() {
           <nav className="p-3 space-y-1">
             <NavItem id="sales-dashboard" label="Dashboard Faturamento & Vendas" icon={BarChart3} active={activeTab} setActive={setActiveTab} badge={salesList.length} />
             <NavItem id="import" label="Importar Peças & Anúncios" icon={FileSpreadsheet} active={activeTab} setActive={setActiveTab} badge={products.length} />
+            <NavItem id="wholesale-calc" label="Simulador Atacado e Varejo" icon={Store} active={activeTab} setActive={setActiveTab} />
             <NavItem id="price-monitor" label="Monitor de Preços (Buy Box)" icon={TrendingUp} active={activeTab} setActive={setActiveTab} />
             <NavItem id="margin-calculator" label="Simulador de Margem Líquida" icon={Calculator} active={activeTab} setActive={setActiveTab} />
             <NavItem id="faq-helper" label="FAQ & Compatibilidade (IA)" icon={MessageSquare} active={activeTab} setActive={setActiveTab} />
@@ -390,6 +392,8 @@ export default function App() {
             darkMode={darkMode} 
           />
         )}
+
+        {activeTab === 'wholesale-calc' && <WholesaleCalculatorTab products={products} darkMode={darkMode} />}
 
         {activeTab === 'price-monitor' && <PriceMonitorTab products={products} setProducts={setProducts} darkMode={darkMode} />}
 
@@ -513,6 +517,113 @@ function LoginScreen({ onLogin, darkMode, setDarkMode }) {
               Entrar no Sistema
             </button>
           </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// MÓDULO: SIMULADOR DE ATACADO E VAREJO
+// ==========================================
+function WholesaleCalculatorTab({ products, darkMode }) {
+  const [selectedSku, setSelectedSku] = useState(products[0]?.sku || '');
+  const [quantity, setQuantity] = useState(5);
+
+  const currentProd = products.find(p => p.sku === selectedSku) || products[0] || {
+    name: 'Peça Padrão',
+    price: 150.00,
+    wholesalePrice: 120.00,
+    wholesaleMinQty: 4
+  };
+
+  const precoVarejo = currentProd.price || 150.00;
+  const precoAtacado = currentProd.wholesalePrice || (precoVarejo * 0.85);
+  const qtdMinimaAtacado = currentProd.wholesaleMinQty || 4;
+
+  const ehAtacado = quantity >= qtdMinimaAtacado;
+  const precoAplicado = ehAtacado ? precoAtacado : precoVarejo;
+  const valorTotal = precoAplicado * quantity;
+  const economia = ehAtacado ? (precoVarejo - precoAtacado) * quantity : 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">Simulador de Vendas: Atacado e Varejo</h2>
+        <p className="text-sm text-slate-400">Calcule automaticamente descontos por volume para oficinas e revendedores parceiros.</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl text-xs`}>
+          <div>
+            <label className="text-slate-400 font-medium block mb-1">Selecionar Peça</label>
+            <select
+              value={selectedSku}
+              onChange={(e) => setSelectedSku(e.target.value)}
+              className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-semibold"
+            >
+              {products.map(p => (
+                <option key={p.id} value={p.sku}>SKU {p.sku} - {p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-slate-400 font-medium block mb-1">Quantidade Desejada</label>
+            <input
+              type="number"
+              min="1"
+              value={quantity}
+              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+              className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono"
+            />
+          </div>
+
+          <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700 space-y-2 font-mono">
+            <div className="flex justify-between text-slate-400">
+              <span>Preço Unitário (Varejo):</span>
+              <span className="text-white">R$ {precoVarejo.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-slate-400">
+              <span>Preço Unitário (Atacado):</span>
+              <span className="text-emerald-400">R$ {precoAtacado.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-slate-400">
+              <span>Qtd Mínima Atacado:</span>
+              <span className="text-amber-400">{qtdMinimaAtacado} un</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-xl flex flex-col justify-center border-l-4 border-l-amber-400`}>
+            <div className="text-xs text-slate-400 font-semibold uppercase">Tipo de Venda Aplicado</div>
+            <div className="text-2xl font-black text-amber-400">
+              {ehAtacado ? '🎉 Atacado (Volume)' : '👤 Varejo (Unitário)'}
+            </div>
+            <div className="text-xs text-slate-500">
+              {ehAtacado ? `Parabéns! Desconto de atacado ativado (>= ${qtdMinimaAtacado} un)` : `Compre mais ${qtdMinimaAtacado - quantity} un para ativar o preço de atacado.`}
+            </div>
+          </div>
+
+          <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-xl flex flex-col justify-center border-l-4 border-l-emerald-400`}>
+            <div className="text-xs text-slate-400 font-semibold uppercase">Valor Total do Pedido</div>
+            <div className="text-3xl font-black font-mono text-emerald-400">
+              R$ {valorTotal.toFixed(2)}
+            </div>
+            <div className="text-xs text-slate-500">Unitário aplicado: R$ {precoAplicado.toFixed(2)}</div>
+          </div>
+
+          <div className={`lg:col-span-2 p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-xl flex items-center justify-between`}>
+            <div>
+              <div className="text-xs text-slate-400 font-semibold uppercase">Economia Total do Cliente</div>
+              <div className="text-xl font-bold font-mono text-blue-400 mt-1">R$ {economia.toFixed(2)}</div>
+            </div>
+            <div className="text-right">
+              <span className="text-xs text-slate-500">Peça selecionada:</span>
+              <div className="text-xs font-bold text-slate-200">{currentProd.name}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -797,7 +908,7 @@ function MarginCalculatorTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO: OTIMIZADOR DE TRÁFEGO ORGÂNICO (SEO GRATUITO - AVANÇADO COM 2, 3 E 4 AUTOMÁTICO)
+// MÓDULO: OTIMIZADOR DE TRÁFEGO ORGÂNICO (SEO GRATUITO & AVANÇADO)
 // ==========================================
 function OrganicSeoTab({ products, darkMode }) {
   const [copiedIndex, setCopiedIndex] = useState(null);
@@ -900,7 +1011,6 @@ function OrganicSeoTab({ products, darkMode }) {
                 </span>
               </div>
 
-              {/* ALERTA DE TERMOS PROIBIDOS */}
               {forbiddenFound.length > 0 && (
                 <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-xs flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 flex-shrink-0" />
@@ -909,7 +1019,6 @@ function OrganicSeoTab({ products, darkMode }) {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                {/* TÍTULO OTIMIZADO */}
                 <div className="p-3 bg-blue-600/10 rounded-xl border border-blue-500/30 flex flex-col justify-between space-y-2">
                   <div>
                     <span className="text-blue-400 font-semibold block mb-1">Título Otimizado (SEO):</span>
@@ -923,7 +1032,6 @@ function OrganicSeoTab({ products, darkMode }) {
                   </div>
                 </div>
 
-                {/* TAGS AUTOMÁTICAS */}
                 <div className="p-3 bg-slate-800/50 rounded-xl border border-slate-700 flex flex-col justify-between space-y-2">
                   <div>
                     <span className="text-slate-400 font-semibold block mb-1 flex items-center gap-1">
@@ -941,7 +1049,6 @@ function OrganicSeoTab({ products, darkMode }) {
                 </div>
               </div>
 
-              {/* DESCRIÇÃO AUTOMÁTICA EM BLOCOS */}
               <div className="pt-2">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-slate-400 font-semibold text-xs flex items-center gap-1">
@@ -1954,6 +2061,8 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           const conta = String(row['Conta'] || 'DL Auto Peças');
           const currentCat = String(row['Categoria'] || 'Acessórios para Veículos > Peças Gerais');
           const price = Number(row['Preço'] || 150.00);
+          const wholesalePrice = Number(row['Preço Atacado'] || (price * 0.85));
+          const wholesaleMinQty = Number(row['Qtd Atacado'] || 4);
           const costPrice = Number(row['Custo'] || 60.00);
           const stock = Number(row['Estoque'] || 5);
           
@@ -1978,6 +2087,8 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
             currentCat,
             status,
             price,
+            wholesalePrice,
+            wholesaleMinQty,
             costPrice,
             stock,
             date: formattedDate,
@@ -2071,7 +2182,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
               <tr>
                 <th className="p-4">SKU / MLB</th>
                 <th className="p-4">Título do Anúncio</th>
-                <th className="p-4">Preço / Estoque</th>
+                <th className="p-4">Preço Varejo / Atacado</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Data Publicação</th>
                 <th className="p-4 text-center">Ações</th>
@@ -2091,8 +2202,8 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
                     </td>
                     <td className="p-4 font-semibold text-slate-200">{p.name}</td>
                     <td className="p-4 font-mono text-xs">
-                      <div className="text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</div>
-                      <div className="text-slate-400">Estoque: {p.stock !== undefined ? p.stock : 5} un</div>
+                      <div className="text-emerald-400 font-bold">Varejo: R$ {Number(p.price || 150).toFixed(2)}</div>
+                      <div className="text-blue-400">Atacado: R$ {Number(p.wholesalePrice || (p.price * 0.85)).toFixed(2)} (Min: {p.wholesaleMinQty || 4}un)</div>
                     </td>
                     <td className="p-4">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
@@ -2598,7 +2709,7 @@ function PhotoEditorTab({ darkMode }) {
 // ==========================================
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
-    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '' }
+    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, wholesalePrice: 120.00, wholesaleMinQty: 4, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '' }
   );
 
   const handleSubmit = (e) => {
@@ -2630,9 +2741,19 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-slate-400 font-medium">Preço (R$)</label>
+              <label className="text-slate-400 font-medium">Preço Varejo (R$)</label>
               <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
             </div>
+            <div>
+              <label className="text-slate-400 font-medium">Preço Atacado (R$)</label>
+              <input type="number" step="0.01" value={formData.wholesalePrice} onChange={(e) => setFormData({ ...formData, wholesalePrice: Number(e.target.value) })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+            </div>
+            <div>
+              <label className="text-slate-400 font-medium">Qtd Mín. Atacado</label>
+              <input type="number" value={formData.wholesaleMinQty} onChange={(e) => setFormData({ ...formData, wholesaleMinQty: Number(e.target.value) })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-slate-400 font-medium">Custo (R$)</label>
               <input type="number" step="0.01" value={formData.costPrice} onChange={(e) => setFormData({ ...formData, costPrice: Number(e.target.value) })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
