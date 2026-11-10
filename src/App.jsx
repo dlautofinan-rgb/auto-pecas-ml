@@ -51,61 +51,29 @@ import {
 
 // --- DADOS INICIAIS DE EXEMPLO ---
 const DEFAULT_PRODUCTS = [
-  { id: 'p1', sku: 'KIT-CORREIA-01', name: 'Kit Correia Dentada + Tensionador 1.6 16v', dept: 'mecanica', sales: 25400.00, qty: 110, price: 230.90, date: '2026-11-01' },
-  { id: 'p2', sku: 'BOMBA-AGUA-02', name: 'Bomba d\'Água Motor EA111', dept: 'mecanica', sales: 19800.00, qty: 74, price: 267.50, date: '2026-11-04' },
+  { id: 'p1', sku: '036109119P', name: 'Kit Correia Dentada + Tensionador 1.6 16v', dept: 'mecanica', sales: 25400.00, qty: 110, price: 230.90, date: '2026-11-01' },
+  { id: 'p2', sku: '030121008', name: 'Bomba d\'Água Motor EA111', dept: 'mecanica', sales: 19800.00, qty: 74, price: 267.50, date: '2026-11-04' },
   { id: 'p3', sku: 'ALT-90A-12V', name: 'Alternador 90A 12V Réplica', dept: 'eletrica', sales: 18500.00, qty: 52, price: 355.70, date: '2026-10-28' },
-  { id: 'p4', sku: 'BOB-IGN-1.0', name: 'Bobina de Ignição Flex 4 Pinos', dept: 'eletrica', sales: 10400.00, qty: 60, price: 173.30, date: '2026-11-06' },
-  { id: 'p5', sku: 'CAPO-DIANT-PR', name: 'Capô Dianteiro Primer Hatch', dept: 'lataria', sales: 13200.00, qty: 22, price: 600.00, date: '2026-10-15' },
+  { id: 'p4', sku: '032905106B', name: 'Bobina de Ignição Flex 4 Pinos', dept: 'eletrica', sales: 10400.00, qty: 60, price: 173.30, date: '2026-11-06' },
+  { id: 'p5', sku: '5U0823031', name: 'Capô Dianteiro Primer Hatch', dept: 'lataria', sales: 13200.00, qty: 22, price: 600.00, date: '2026-10-15' },
   { id: 'p6', sku: 'PARALAMA-DIR', name: 'Paralama Dianteiro Lado Direito', dept: 'lataria', sales: 6200.00, qty: 23, price: 269.50, date: '2026-11-02' },
-  { id: 'p7', sku: 'TAPETE-BORR-01', name: 'Jogo de Tapetes Borracha Personalizado', dept: 'acabamentos', sales: 9400.00, qty: 150, price: 62.60, date: '2026-11-07' },
+  { id: 'p7', sku: '5U0061500', name: 'Jogo de Tapetes Borracha Personalizado', dept: 'acabamentos', sales: 9400.00, qty: 150, price: 62.60, date: '2026-11-07' },
   { id: 'p8', sku: 'MANOPLA-CAMB-02', name: 'Manopla de Câmbio Esportiva Cromada', dept: 'acabamentos', sales: 5400.00, qty: 80, price: 67.50, date: '2026-11-08' }
 ];
 
 const DEFAULT_RETURNS = [
-  { id: 'r1', date: '2026-11-02', sku: 'BOMBA-AGUA-02', name: 'Bomba d\'Água Motor EA111', dept: 'mecanica', qty: 1, amount: 267.50, reason: 'Erro do Comprador', status: 'Reintegrado', notes: 'Comprado modelo errado.' },
+  { id: 'r1', date: '2026-11-02', sku: '030121008', name: 'Bomba d\'Água Motor EA111', dept: 'mecanica', qty: 1, amount: 267.50, reason: 'Erro do Comprador', status: 'Reintegrado', notes: 'Comprado modelo errado.' },
   { id: 'r2', date: '2026-11-05', sku: 'PAST-FREIO-01', name: 'Jogo Pastilha Freio Dianteiro', dept: 'mecanica', qty: 2, amount: 189.00, reason: 'Defeito', status: 'Descartado', notes: 'Trinca na pastilha.' },
   { id: 'r3', date: '2026-11-08', sku: 'MANOPLA-CAMB-02', name: 'Manopla Câmbio Esportiva', dept: 'acabamentos', qty: 1, amount: 67.50, reason: 'Atraso na Entrega', status: 'Pendente', notes: 'Atraso na transportadora.' }
 ];
 
-// --- BASE DE DADOS INTELIGENTE DE OEM E CATEGORIAS ---
-const OEM_DATABASE = [
-  {
-    id: 'MLB26330',
-    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor > Correias',
-    name: 'Kit Correia Dentada e Tensionadores',
-    oems: ['036109119P', 'CT881', '5507XS', 'K015409XS', 'KTB329']
-  },
-  {
-    id: 'MLB193498',
-    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Ignição > Bobinas',
-    name: 'Bobina de Ignição Flex / Gasolina',
-    oems: ['032905106B', 'BI0017MM', 'CE20118', 'F000ZS0222', '9220081031']
-  },
-  {
-    id: 'MLB412351',
-    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Lataria > Capôs',
-    name: 'Capô Dianteiro / Primer',
-    oems: ['5U0823031', '5W0823031A', '377823151', '5Z0823031']
-  },
-  {
-    id: 'MLB181157',
-    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Habitáculo > Tapetes',
-    name: 'Jogo de Tapetes em Borracha',
-    oems: ['5U0061500', '377061500', 'TP001', 'TAP-01']
-  },
-  {
-    id: 'MLB16428',
-    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios > Pastilhas de Freio',
-    name: 'Jogo de Pastilhas de Freio Dianteiro',
-    oems: ['N159', 'ECO1012', 'PWR512', 'HQJ2221']
-  },
-  {
-    id: 'MLB26412',
-    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor > Bombas d\'Água',
-    name: 'Bomba d\'Água Motor EA111 / AP',
-    oems: ['UB011', 'VKPC86412', 'BA111', '030121008']
-  }
-];
+// Mapeamento de categorias padrão baseadas no departamento cadastrado
+const DEPT_CATEGORIES = {
+  mecanica: { id: 'MLB26330', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor' },
+  eletrica: { id: 'MLB193498', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Ignição' },
+  lataria: { id: 'MLB412351', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Lataria' },
+  acabamentos: { id: 'MLB181157', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Habitáculo' }
+};
 
 function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
   const isActive = active === id;
@@ -224,7 +192,7 @@ export default function App() {
   };
 
   const exportReturnsCSV = () => {
-    const headers = ['ID', 'Data', 'SKU', 'Peça', 'Departamento', 'Qtd', 'Valor (R$)', 'Motivo', 'Status', 'Observações'];
+    const headers = ['ID', 'Data', 'SKU/OEM', 'Peça', 'Departamento', 'Qtd', 'Valor (R$)', 'Motivo', 'Status', 'Observações'];
     const rows = returnsList.map(r => [
       r.id, r.date, r.sku, `"${r.name}"`, r.dept, r.qty, r.amount, `"${r.reason}"`, r.status, `"${r.notes || ''}"`
     ]);
@@ -303,7 +271,7 @@ export default function App() {
             <NavItem id="pricing" label="Pesquisa de Preços" icon={Search} active={activeTab} setActive={setActiveTab} />
             <NavItem id="assistant" label="Assistente Títulos/IA" icon={Sparkles} active={activeTab} setActive={setActiveTab} />
             <NavItem id="photo" label="Editor Fundo Branco" icon={ImageIcon} active={activeTab} setActive={setActiveTab} />
-            <NavItem id="categories" label="Busca OEM & Categoria ML" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="categories" label="Busca OEM do Cadastro" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
           </nav>
         </div>
 
@@ -363,7 +331,7 @@ export default function App() {
 
         {activeTab === 'photo' && <PhotoEditorTab darkMode={darkMode} />}
 
-        {activeTab === 'categories' && <CategoriesTab darkMode={darkMode} />}
+        {activeTab === 'categories' && <CategoriesTab products={products} darkMode={darkMode} />}
       </main>
 
       {isProductModalOpen && (
@@ -656,7 +624,7 @@ function DashboardTab({ products, returnsList, periodFilter, setPeriodFilter, co
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-800 text-xs text-slate-400 uppercase font-semibold">
-                  <th className="pb-3">SKU / Peça</th>
+                  <th className="pb-3">OEM / SKU / Peça</th>
                   <th className="pb-3">Departamento</th>
                   <th className="pb-3 text-right">Preço Un.</th>
                   <th className="pb-3 text-right">Vendas Totais</th>
@@ -668,7 +636,7 @@ function DashboardTab({ products, returnsList, periodFilter, setPeriodFilter, co
                   <tr key={p.id} className="group hover:bg-slate-800/30 transition-colors">
                     <td className="py-3">
                       <div className="font-semibold text-slate-200">{p.name}</div>
-                      <div className="text-xs font-mono text-slate-500">{p.sku}</div>
+                      <div className="text-xs font-mono text-amber-400">OEM/SKU: {p.sku}</div>
                     </td>
                     <td className="py-3">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${
@@ -772,7 +740,7 @@ function ReturnsTab({ returnsList, currentUser, onAddReturn, onEditReturn, onDel
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
                 <th className="p-4">Data</th>
-                <th className="p-4">Peça / SKU</th>
+                <th className="p-4">Peça / OEM</th>
                 <th className="p-4">Qtd</th>
                 <th className="p-4">Valor Total</th>
                 <th className="p-4">Motivo</th>
@@ -792,7 +760,7 @@ function ReturnsTab({ returnsList, currentUser, onAddReturn, onEditReturn, onDel
                     <td className="p-4 font-mono text-xs text-slate-400">{item.date}</td>
                     <td className="p-4">
                       <div className="font-semibold text-slate-200">{item.name}</div>
-                      <div className="text-xs font-mono text-slate-500">{item.sku}</div>
+                      <div className="text-xs font-mono text-amber-400">OEM: {item.sku}</div>
                     </td>
                     <td className="p-4 font-mono">{item.qty}</td>
                     <td className="p-4 font-mono font-bold text-amber-400">R$ {Number(item.amount).toFixed(2)}</td>
@@ -1085,20 +1053,20 @@ function PhotoEditorTab({ darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 6: BUSCA INTELIGENTE DE OEM E CATEGORIAS
+// MÓDULO 6: BUSCA OEM DIRETAMENTE DO SEU CADASTRO
 // ==========================================
-function CategoriesTab({ darkMode }) {
+function CategoriesTab({ products, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedItem, setCopiedItem] = useState(null);
 
-  // Filtra na base interna inteligente por OEM ou Nome
-  const results = OEM_DATABASE.filter(item => {
+  // Filtra diretamente nos produtos cadastrados pelo usuário (usando SKU como Código OEM e o nome/departamento)
+  const results = products.filter(p => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
-    const matchesName = item.name.toLowerCase().includes(term);
-    const matchesPath = item.path.toLowerCase().includes(term);
-    const matchesOem = item.oems.some(oem => oem.toLowerCase().includes(term));
-    return matchesName || matchesPath || matchesOem;
+    const matchesName = p.name.toLowerCase().includes(term);
+    const matchesSku = p.sku.toLowerCase().includes(term);
+    const matchesDept = p.dept.toLowerCase().includes(term);
+    return matchesName || matchesSku || matchesDept;
   });
 
   const copyToClipboard = (text, key) => {
@@ -1110,15 +1078,15 @@ function CategoriesTab({ darkMode }) {
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Busca Inteligente de OEM & Categorias ML</h2>
-        <p className="text-sm text-slate-400">Digite o código OEM ou nome da peça para carregar instantaneamente a categoria, títulos otimizados e descrição técnica.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Busca OEM & Categorias do Seu Cadastro</h2>
+        <p className="text-sm text-slate-400">Pesquise pelas peças que você cadastrou no sistema para gerar automaticamente os títulos e a descrição com o seu Código OEM (SKU).</p>
       </div>
 
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
         <input
           type="text"
-          placeholder="Digite o Código OEM ou Peça (ex: 032905106B, CT881, Bobina, Capô)..."
+          placeholder="Digite o Código OEM (SKU) ou nome da sua peça cadastrada..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className={`w-full pl-10 pr-4 py-3 rounded-xl text-sm border ${
@@ -1130,56 +1098,58 @@ function CategoriesTab({ darkMode }) {
       <div className="space-y-6">
         {results.length === 0 ? (
           <div className="p-8 text-center text-slate-500 bg-slate-900/50 rounded-2xl border border-slate-800">
-            Nenhum resultado encontrado para "{searchTerm}". Tente outro código OEM ou termo.
+            Nenhuma peça cadastrada encontrada com o termo "{searchTerm}". Adicione novas peças no Dashboard para vê-las aqui.
           </div>
         ) : (
-          results.map((item, idx) => {
-            const cleanQuery = searchTerm.trim() ? searchTerm.trim().toUpperCase() : item.oems[0];
+          results.map((p, idx) => {
+            const catInfo = DEPT_CATEGORIES[p.dept] || { id: 'MLB26330', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes' };
             
             const titles = [
-              `${item.name} OEM ${cleanQuery}`.trim(),
-              `Kit ${item.name} Original OEM ${cleanQuery}`.trim(),
-              `${item.name} Alta Qualidade OEM ${cleanQuery}`.trim(),
-              `Par ${item.name} Compatível OEM ${cleanQuery}`.trim()
+              `${p.name} OEM ${p.sku}`.trim(),
+              `Kit ${p.name} Original OEM ${p.sku}`.trim(),
+              `${p.name} Alta Qualidade OEM ${p.sku}`.trim(),
+              `Par ${p.name} Compatível OEM ${p.sku}`.trim()
             ].map(t => t.length > 60 ? t.slice(0, 57) + '...' : t);
 
             const description = 
 `==================================================
-  ${item.name.toUpperCase()} - CÓDIGO OEM: ${cleanQuery}
+  ${p.name.toUpperCase()} - CÓDIGO OEM: ${p.sku}
 ==================================================
 
-Peça de alta durabilidade e precisão técnica, projetada para substituição direta com encaixe perfeito.
+Peça de alta durabilidade e precisão técnica, cadastrada em nosso estoque com preço competitivo.
 
 FICHA TÉCNICA:
-- Código OEM / Referência: ${cleanQuery}
-- Categoria Mercado Livre: ${item.path} (${item.id})
+- Código OEM / Referência (SKU): ${p.sku}
+- Categoria Mercado Livre: ${catInfo.path} (${catInfo.id})
+- Preço Atual no Estoque: R$ ${Number(p.price).toFixed(2)}
 - Condição: Produto Novo com Garantia
 - Envio: Pronta Entrega para todo o Brasil
 
 ATENÇÃO E COMPATIBILIDADE:
-Antes de efetuar a compra, confirme a numeração OEM registrada na sua peça original (${cleanQuery}). Em caso de dúvidas, consulte seu mecânico de confiança.`;
+Antes de efetuar a compra, confirme a numeração OEM registrada na sua peça original (${p.sku}). Em caso de dúvidas, consulte seu mecânico de confiança.`;
 
             return (
-              <div key={item.id} className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-5 shadow-xl`}>
+              <div key={p.id} className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-5 shadow-xl`}>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-4 border-b border-slate-800">
                   <div>
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {item.oems.map((oemCode, oIdx) => (
-                        <span key={oIdx} className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2.5 py-0.5 rounded-lg border border-amber-400/20 font-bold">
-                          OEM: {oemCode}
-                        </span>
-                      ))}
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      <span className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2.5 py-1 rounded-lg border border-amber-400/20 font-bold">
+                        OEM / SKU: {p.sku}
+                      </span>
+                      <span className="text-xs font-mono bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/20 font-bold">
+                        Estoque: {p.qty} un. (R$ {Number(p.price).toFixed(2)})
+                      </span>
                     </div>
-                    <h3 className="text-lg font-bold text-slate-100">{item.name}</h3>
-                    <p className="text-xs text-slate-400">{item.path}</p>
+                    <h3 className="text-lg font-bold text-slate-100">{p.name}</h3>
+                    <p className="text-xs text-slate-400">{catInfo.path}</p>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-3 py-1 rounded-xl border border-blue-500/20 font-bold">
-                      ID ML: {item.id}
+                      ID ML: {catInfo.id}
                     </span>
                     <button
-                      onClick={() => copyToClipboard(item.id, `id_${idx}`)}
+                      onClick={() => copyToClipboard(catInfo.id, `id_${idx}`)}
                       className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs flex items-center gap-1 transition-colors"
                     >
                       {copiedItem === `id_${idx}` ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -1264,8 +1234,8 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-slate-400 font-medium">SKU</label>
-              <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
+              <label className="text-slate-400 font-medium">Código OEM / SKU</label>
+              <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" placeholder="Ex: 036109119P" required />
             </div>
             <div>
               <label className="text-slate-400 font-medium">Departamento</label>
@@ -1353,7 +1323,7 @@ function ReturnModal({ returnData, products, onSave, onClose, darkMode }) {
             <select onChange={(e) => handleSelectProduct(e.target.value)} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white">
               <option value="">-- Selecione uma peça --</option>
               {products.map(p => (
-                <option key={p.id} value={p.sku}>{p.name} ({p.sku})</option>
+                <option key={p.id} value={p.sku}>{p.name} (OEM: {p.sku})</option>
               ))}
             </select>
           </div>
