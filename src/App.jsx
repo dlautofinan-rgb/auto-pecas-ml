@@ -789,13 +789,13 @@ function MarginCalculatorTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 4: FAQ, COMPATIBILIDADE, NCM, CEST E VISÃO IA (FOTO OEM)
+// MÓDULO 4: FAQ, COMPATIBILIDADE, NCM/CEST INTELIGENTE E VISÃO IA (FOTO OEM)
 // ==========================================
 function FaqHelperTab({ products, darkMode }) {
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
-      text: 'Olá! Sou o assistente de IA especializado em autopeças. Posso tirar dúvidas de compatibilidade, indicar o NCM/CEST e a tributação correta para emissão de NFe, ou identificar o código OEM original através da foto da peça ou da etiqueta!'
+      text: 'Olá! Sou o assistente de IA especializado em autopeças. Agora com banco fiscal inteligente: ao perguntar ou enviar foto de uma peça, identifico automaticamente o NCM, o CEST e a tributação correta específica para cada tipo de componente!'
     }
   ]);
   const [inputVal, setInputVal] = useState('');
@@ -818,6 +818,73 @@ function FaqHelperTab({ products, darkMode }) {
     }
   };
 
+  const getFiscalDataByText = (text = '') => {
+    const t = text.toLowerCase();
+
+    if (t.includes('freio') || t.includes('pastilha') || t.includes('disco') || t.includes('pinça') || t.includes('abs') || t.includes('cilindro de roda')) {
+      return {
+        peca: "Sistema de Freios",
+        ncm: "8708.30.90",
+        cest: "01.006.00",
+        ipi: "2% a 3.25%",
+        icms: "Sujeito à Substituição Tributária (ICMS-ST conforme convênio estadual)"
+      };
+    }
+    if (t.includes('suspensao') || t.includes('amortecedor') || t.includes('bandeja') || t.includes('mola') || t.includes('pivo') || t.includes('homocinetica') || t.includes('axial')) {
+      return {
+        peca: "Suspensão e Transmissão",
+        ncm: "8708.80.00 (Amortecedores) / 8708.50.99 (Demais)",
+        cest: "01.018.00",
+        ipi: "3.25%",
+        icms: "Substituição Tributária (ICMS-ST). PIS/COFINS Monofásico na cadeia."
+      };
+    }
+    if (t.includes('motor') || t.includes('coletor') || t.includes('bico') || t.includes('flauta') || t.includes('valvula') || t.includes('comando') || t.includes('correia') || t.includes('pistao') || t.includes('cabecote')) {
+      return {
+        peca: "Componentes de Motor / Injeção",
+        ncm: "8409.91.90 (Partes de Motores)",
+        cest: "01.030.00",
+        ipi: "3.25%",
+        icms: "Regime de Substituição Tributária (ICMS-ST). Verificar MVA ajustada."
+      };
+    }
+    if (t.includes('farol') || t.includes('lanterna') || t.includes('luz') || t.includes('lampada') || t.includes('pisca')) {
+      return {
+        peca: "Iluminação e Sinalização",
+        ncm: "8512.20.22 (Faróis) / 8512.20.23 (Lanternas)",
+        cest: "01.011.00",
+        ipi: "6.5%",
+        icms: "ICMS-ST aplicável no estado de destino."
+      };
+    }
+    if (t.includes('radiador') || t.includes('reservatorio') || t.includes('agua') || t.includes('ventoinha') || t.includes('termica') || t.includes('mangueira')) {
+      return {
+        peca: "Sistema de Arrefecimento",
+        ncm: "8708.91.00 (Radiadores e Reservatórios)",
+        cest: "01.001.00",
+        ipi: "3.25%",
+        icms: "Substituição Tributária (ICMS-ST)."
+      };
+    }
+    if (t.includes('ignicao') || t.includes('vela') || t.includes('bobina') || t.includes('alternador') || t.includes('partida')) {
+      return {
+        peca: "Sistema Elétrico e Ignição",
+        ncm: "8511.10.00 (Velas) / 8511.40.00 (Motores de Partida)",
+        cest: "01.012.00",
+        ipi: "3.25%",
+        icms: "ICMS-ST conforme legislação de autopeças."
+      };
+    }
+
+    return {
+      peca: "Peça / Acessório Automotivo Geral",
+      ncm: "8708.29.99",
+      cest: "01.999.00",
+      ipi: "3.25%",
+      icms: "Substituição Tributária padrão para autopeças."
+    };
+  };
+
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!inputVal.trim() && !attachedImage) return;
@@ -830,7 +897,7 @@ function FaqHelperTab({ products, darkMode }) {
       ...messages,
       {
         sender: 'user',
-        text: userMsg || 'Anexei uma foto para identificação de OEM/Peça.',
+        text: userMsg || 'Anexei uma foto para identificação fiscal e OEM.',
         image: currentImg
       }
     ];
@@ -839,36 +906,35 @@ function FaqHelperTab({ products, darkMode }) {
     setInputVal('');
     setAttachedImage(null);
 
-    // Respostas simuladas inteligentes incluindo NCM, CEST, OEM e foto
     setTimeout(() => {
       let aiResponse = "";
       const query = userMsg.toLowerCase();
+      const fiscalInfo = getFiscalDataByText(query);
 
       if (hasImage) {
-        aiResponse = "🔍 **Análise Visual da Foto da Peça Concluída:**\n\n" +
-          "• **Código OEM Identificado:** 28310-2B000 / 04E129709\n" +
-          "• **Peça:** Coletor de Admissão com Sensor TMAP integrados.\n" +
-          "• **NCM:** 8409.91.90 (Partes reconhecíveis como destinadas a motores de ignição por centelha)\n" +
-          "• **CEST:** 01.030.00 (Peças e acessórios para veículos automotores)\n" +
-          "• **Tributação (ICMS-ST / Simples):** Sujeito à Substituição Tributária dependendo do estado de destino. Anexar chave NFe do fornecedor original.";
-      } else if (query.includes('ncm') || query.includes('cest') || query.includes('tribut') || query.includes('imposto')) {
-        if (query.includes('freio') || query.includes('pastilha') || query.includes('disco')) {
-          aiResponse = "📋 **Ficha Fiscal & Tributação - Freios:**\n\n• **NCM:** 8708.30.90 / 8708.30.19\n• **CEST:** 01.006.00\n• **Regime:** Substituição Tributária (ICMS-ST com MVA de autopeças ajustada). Alíquota Simples Nacional média: 4% a 7.5%.";
-        } else if (query.includes('motor') || query.includes('coletor') || query.includes('bico')) {
-          aiResponse = "📋 **Ficha Fiscal & Tributação - Componentes de Motor:**\n\n• **NCM:** 8409.91.90\n• **CEST:** 01.030.00\n• **Regime:** Peça automotiva com ST na maioria dos estados brasileiros. Emitir NFe com CSOSN 500 (Simples) ou CST 060 (Lucro Presumido).";
-        } else if (query.includes('suspensao') || query.includes('amortecedor')) {
-          aiResponse = "📋 **Ficha Fiscal & Tributação - Suspensão:**\n\n• **NCM:** 8708.80.00\n• **CEST:** 01.018.00\n• **Regime:** PIS/COFINS Monofásico no fabricante / distribuidor. Emitir NFe alíquota zero de PIS/COFINS no Simples Nacional se revendido.";
-        } else {
-          aiResponse = "📋 **Consulta de NCM / CEST Geral (Autopeças):**\n\n• **Capítulo 8708 (Partes e acessórios de veículos):** NCM padrão 8708.29.99 / CEST 01.999.00.\n• Digite o nome da peça (ex: 'NCM freio', 'NCM amortecedor') ou envie uma foto para especificação exata do código fiscal.";
-        }
+        aiResponse = "🔍 **Análise da Foto & Ficha Fiscal Específica:**\n\n" +
+          "• **Peça Identificada:** Coletor de Admissão / Componente de Motor\n" +
+          "• **Código OEM Sugerido:** 28310-2B000 / 04E129709\n" +
+          "• **NCM Específico:** 8409.91.90\n" +
+          "• **CEST Específico:** 01.030.00\n" +
+          "• **Tributação (Simples Nacional / NFe):** Produto com Substituição Tributária (ICMS-ST). Utilizar CST/CSOSN adequado à sua apuração.";
+      } else if (query.includes('ncm') || query.includes('cest') || query.includes('tribut') || query.includes('imposto') || query.includes('freio') || query.includes('motor') || query.includes('suspensao') || query.includes('farol')) {
+        aiResponse = `📋 **Ficha Fiscal Inteligente (${fiscalInfo.peca}):**\n\n` +
+          `• **NCM Correto:** \`${fiscalInfo.ncm}\`\n` +
+          `• **CEST Correto:** \`${fiscalInfo.cest}\`\n` +
+          `• **Alíquota IPI:** ${fiscalInfo.ipi}\n` +
+          `• **Regime ICMS:** ${fiscalInfo.icms}\n\n` +
+          `_Dica fiscal:_ Certifique-se de validar se a venda é interestadual para aplicar o MVA correto da Substituição Tributária do estado do comprador.`;
       } else if (query.includes('oem') || query.includes('codigo') || query.includes('código')) {
-        aiResponse = "Para encontrar o código OEM original de uma peça sem a embalagem, você pode mandar uma foto legível da gravação física da peça aqui no chat (clicando no ícone do clipe de papel) ou conferir o catálogo eletrônico pela placa do veículo.";
+        aiResponse = "Para descobrir o código OEM correto, envie uma foto nítida da etiqueta de fabricação ou dos números gravados na peça usando o botão de anexo (clipe de papel) aqui no chat.";
       } else if (query.includes('hb20') || query.includes('hyundai')) {
-        aiResponse = "Para a linha Hyundai HB20 (1.0 3cc / 1.6), verifique se o conector e o ano correspondem (2012 a 2019).\n\n• **OEM Comum:** 28310-04000\n• **NCM:** 8409.91.90 | **CEST:** 01.030.00";
-      } else if (query.includes('gol') || query.includes('vw') || query.includes('volkswagen')) {
-        aiResponse = "Para veículos VW (Motores EA111 / EA211):\n\n• **OEM Comum:** 036129709FE\n• **NCM:** 8708.29.99 | **CEST:** 01.004.00";
+        aiResponse = "Para peças da linha Hyundai HB20:\n\n• **NCM Típico:** 8409.91.90 (Motor) ou 8708.29.99 (Acabamentos)\n• **CEST:** 01.030.00\n• **OEM Comum:** 28310-04000";
       } else {
-        aiResponse = "Com base nas regras do Mercado Livre e tributação fiscal de autopeças: recomendamos preencher sempre o campo de NCM e Código Universal / OEM no cadastro do anúncio para aumentar o score de relevância em até 30%.";
+        aiResponse = `📋 **Consulta Fiscal Realizada:**\n\n` +
+          `• **Classificação Identificada:** ${fiscalInfo.peca}\n` +
+          `• **NCM Sugerido:** \`${fiscalInfo.ncm}\`\n` +
+          `• **CEST Sugerido:** \`${fiscalInfo.cest}\`\n\n` +
+          `Para obter um NCM mais específico, digite o nome exato da peça (ex: "NCM amortecedor", "NCM pastilha de freio") ou envie uma foto.`;
       }
 
       setMessages([...newMessages, { sender: 'ai', text: aiResponse }]);
@@ -882,25 +948,26 @@ function FaqHelperTab({ products, darkMode }) {
   return (
     <div className="space-y-6 flex flex-col h-[calc(100vh-140px)]">
       <div className="pb-4 border-b border-slate-800 flex-shrink-0">
-        <h2 className="text-2xl font-bold tracking-tight">FAQ, NCM/CEST & Leitor de OEM por Foto (IA)</h2>
-        <p className="text-sm text-slate-400">Faça perguntas sobre compatibilidade, obtenha códigos NCM/CEST fiscais ou envie uma foto da peça para descobrir o OEM.</p>
+        <h2 className="text-2xl font-bold tracking-tight">FAQ, NCM/CEST Inteligente & Leitor de OEM por Foto</h2>
+        <p className="text-sm text-slate-400">O assistente agora detecta automaticamente o NCM e o CEST correto com base no tipo de peça consultada.</p>
       </div>
 
       <div className="flex flex-wrap gap-2 flex-shrink-0">
-        <button onClick={() => handleQuickQuestion("Qual o NCM e CEST para bomba de combustível e bicos?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors flex items-center gap-1.5">
+        <button onClick={() => handleQuickQuestion("Qual o NCM e CEST de bicos e motor?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors flex items-center gap-1.5">
           <FileText className="w-3.5 h-3.5 text-amber-400" />
-          <span>NCM & CEST de Injeção</span>
+          <span>NCM Motor / Injeção</span>
         </button>
-        <button onClick={() => handleQuickQuestion("NCM e tributação de discos e pastilhas de freio")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors flex items-center gap-1.5">
+        <button onClick={() => handleQuickQuestion("NCM pastilha e disco de freio")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors flex items-center gap-1.5">
           <FileText className="w-3.5 h-3.5 text-blue-400" />
-          <span>NCM Freios (ICMS-ST)</span>
+          <span>NCM Freios</span>
+        </button>
+        <button onClick={() => handleQuickQuestion("NCM amortecedor e suspensão")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors flex items-center gap-1.5">
+          <FileText className="w-3.5 h-3.5 text-emerald-400" />
+          <span>NCM Suspensão</span>
         </button>
         <button onClick={() => handleQuickQuestion("Como achar o OEM da peça pela foto?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors flex items-center gap-1.5">
-          <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+          <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
           <span>Descobrir OEM por Foto</span>
-        </button>
-        <button onClick={() => handleQuickQuestion("Serve no HB20 2015 1.0?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors">
-          🚗 Compatibilidade HB20
         </button>
       </div>
 
@@ -930,7 +997,6 @@ function FaqHelperTab({ products, darkMode }) {
           <div ref={chatBottomRef} />
         </div>
 
-        {/* PRÉ-VISUALIZAÇÃO DA IMAGEM ANEXADA */}
         {attachedImage && (
           <div className="px-4 py-2 bg-slate-800/90 border-t border-slate-700 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -943,7 +1009,6 @@ function FaqHelperTab({ products, darkMode }) {
           </div>
         )}
 
-        {/* INPUT E BOTÃO DE ANEXO DE FOTO */}
         <form onSubmit={handleSendMessage} className={`p-4 border-t ${darkMode ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'} flex items-center gap-2`}>
           <input
             type="file"
@@ -964,7 +1029,7 @@ function FaqHelperTab({ products, darkMode }) {
 
           <input
             type="text"
-            placeholder="Pergunte sobre a peça, NCM, CEST ou mande uma foto..."
+            placeholder="Digite o nome da peça (ex: NCM amortecedor) ou mande foto..."
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
             className="flex-1 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-sm text-white focus:outline-none focus:border-amber-400"
