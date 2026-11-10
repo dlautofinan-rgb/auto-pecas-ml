@@ -812,7 +812,6 @@ function FaqHelperTab({ products, darkMode }) {
     setMessages(newMessages);
     setInputVal('');
 
-    // Lógica inteligente de resposta baseada nas perguntas da equipe
     setTimeout(() => {
       let aiResponse = "Com base no catálogo e nas políticas do Mercado Livre, recomendamos confirmar o código OEM da peça antiga antes do envio para evitar devoluções por incompatibilidade de versão.";
       const query = userMsg.toLowerCase();
@@ -904,9 +903,11 @@ function FaqHelperTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 6: CURVA ABC DE ESTOQUE
+// MÓDULO 6: CURVA ABC DE ESTOQUE (COM FILTRO POR CLIQUE)
 // ==========================================
 function CurvaAbcTab({ products, darkMode }) {
+  const [selectedCurva, setSelectedCurva] = useState('TODAS'); // 'TODAS', 'A', 'B', 'C'
+
   const evaluated = products.map((p, i) => {
     const simulatedRevenue = (p.price || 150) * (p.stock || 5) * (i % 2 === 0 ? 3 : 1);
     return { ...p, simulatedRevenue };
@@ -934,34 +935,93 @@ function CurvaAbcTab({ products, darkMode }) {
   const countB = abcClassified.filter(p => p.curva === 'B').length;
   const countC = abcClassified.filter(p => p.curva === 'C').length;
 
+  const filteredProducts = selectedCurva === 'TODAS'
+    ? abcClassified
+    : abcClassified.filter(p => p.curva === selectedCurva);
+
+  const handleCardClick = (curvaType) => {
+    if (selectedCurva === curvaType) {
+      setSelectedCurva('TODAS');
+    } else {
+      setSelectedCurva(curvaType);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Curva ABC de Estoque & Giro de Peças</h2>
-        <p className="text-sm text-slate-400">Classificação automática do estoque para identificar peças de alto giro (Curva A) e peças paradas (Curva C).</p>
+      <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Curva ABC de Estoque & Giro de Peças</h2>
+          <p className="text-sm text-slate-400">Clique em qualquer um dos cards abaixo para filtrar as peças na tabela por categoria.</p>
+        </div>
+
+        {selectedCurva !== 'TODAS' && (
+          <button
+            onClick={() => setSelectedCurva('TODAS')}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold border border-slate-700 transition-colors self-start md:self-auto"
+          >
+            Exibir Todas as Peças ({abcClassified.length})
+          </button>
+        )}
       </div>
 
+      {/* CARDS CLICÁVEIS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-emerald-400`}>
-          <div className="text-xs text-slate-400 font-semibold">Curva A (Alto Giro - 80% Faturamento)</div>
-          <div className="text-2xl font-black font-mono text-emerald-400">{countA} peças</div>
+        <div
+          onClick={() => handleCardClick('A')}
+          className={`p-5 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] shadow-md border-l-4 border-l-emerald-400 ${
+            selectedCurva === 'A'
+              ? 'bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/50'
+              : darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}
+        >
+          <div className="flex justify-between items-center">
+            <div className="text-xs text-slate-400 font-semibold">Curva A (Alto Giro - 80% Faturamento)</div>
+            {selectedCurva === 'A' && <span className="text-[10px] font-bold bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full">Ativo</span>}
+          </div>
+          <div className="text-2xl font-black font-mono text-emerald-400 mt-1">{countA} peças</div>
           <div className="text-[10px] text-slate-500">Nunca deixe faltar em estoque</div>
         </div>
 
-        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-blue-400`}>
-          <div className="text-xs text-slate-400 font-semibold">Curva B (Giro Moderado - 15%)</div>
-          <div className="text-2xl font-black font-mono text-blue-400">{countB} peças</div>
+        <div
+          onClick={() => handleCardClick('B')}
+          className={`p-5 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] shadow-md border-l-4 border-l-blue-400 ${
+            selectedCurva === 'B'
+              ? 'bg-blue-950/40 border-blue-500 ring-2 ring-blue-500/50'
+              : darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}
+        >
+          <div className="flex justify-between items-center">
+            <div className="text-xs text-slate-400 font-semibold">Curva B (Giro Moderado - 15%)</div>
+            {selectedCurva === 'B' && <span className="text-[10px] font-bold bg-blue-500 text-white px-2 py-0.5 rounded-full">Ativo</span>}
+          </div>
+          <div className="text-2xl font-black font-mono text-blue-400 mt-1">{countB} peças</div>
           <div className="text-[10px] text-slate-500">Reposição controlada</div>
         </div>
 
-        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-amber-400`}>
-          <div className="text-xs text-slate-400 font-semibold">Curva C (Baixo Giro / Paradas - 5%)</div>
-          <div className="text-2xl font-black font-mono text-amber-400">{countC} peças</div>
+        <div
+          onClick={() => handleCardClick('C')}
+          className={`p-5 rounded-2xl border cursor-pointer transition-all hover:scale-[1.02] shadow-md border-l-4 border-l-amber-400 ${
+            selectedCurva === 'C'
+              ? 'bg-amber-950/40 border-amber-500 ring-2 ring-amber-500/50'
+              : darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}
+        >
+          <div className="flex justify-between items-center">
+            <div className="text-xs text-slate-400 font-semibold">Curva C (Baixo Giro / Paradas - 5%)</div>
+            {selectedCurva === 'C' && <span className="text-[10px] font-bold bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full">Ativo</span>}
+          </div>
+          <div className="text-2xl font-black font-mono text-amber-400 mt-1">{countC} peças</div>
           <div className="text-[10px] text-slate-500">Recomendado fazer liquidação</div>
         </div>
       </div>
 
+      {/* TABELA FILTRADA */}
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <div className="p-4 border-b border-slate-800 flex justify-between items-center text-xs text-slate-400 font-semibold">
+          <span>Exibindo: <strong className="text-amber-400">{selectedCurva === 'TODAS' ? 'Todas as Peças' : `Apenas Curva ${selectedCurva}`}</strong> ({filteredProducts.length} itens)</span>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
@@ -974,12 +1034,12 @@ function CurvaAbcTab({ products, darkMode }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
-              {abcClassified.length === 0 ? (
+              {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="p-8 text-center text-slate-500">Nenhum produto cadastrado.</td>
+                  <td colSpan="5" className="p-8 text-center text-slate-500">Nenhum produto cadastrado nesta curva.</td>
                 </tr>
               ) : (
-                abcClassified.map(p => (
+                filteredProducts.map(p => (
                   <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                     <td className="p-4">
                       <div className="font-bold text-amber-400 font-mono">SKU: {p.sku}</div>
