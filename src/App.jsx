@@ -45,7 +45,10 @@ import {
   Paperclip,
   FileText,
   Truck,
-  Zap
+  Zap,
+  Tag,
+  ShieldAlert,
+  FileCode
 } from 'lucide-react';
 
 // --- CONFIGURAÇÃO FIREBASE ---
@@ -794,73 +797,162 @@ function MarginCalculatorTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO: OTIMIZADOR DE TRÁFEGO ORGÂNICO (SEO GRATUITO)
+// MÓDULO: OTIMIZADOR DE TRÁFEGO ORGÂNICO (SEO GRATUITO - AVANÇADO COM 2, 3 E 4 AUTOMÁTICO)
 // ==========================================
 function OrganicSeoTab({ products, darkMode }) {
   const [copiedIndex, setCopiedIndex] = useState(null);
+  const [copiedDescIndex, setCopiedDescIndex] = useState(null);
 
-  const handleCopy = (text, idx) => {
+  const handleCopy = (text, idx, isDesc = false) => {
     navigator.clipboard.writeText(text);
-    setCopiedIndex(idx);
-    setTimeout(() => setCopiedIndex(null), 2000);
+    if (isDesc) {
+      setCopiedDescIndex(idx);
+      setTimeout(() => setCopiedDescIndex(null), 2000);
+    } else {
+      setCopiedIndex(idx);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    }
+  };
+
+  const forbiddenWordsList = ['barato', 'promoção', 'promocao', 'grátis', 'gratis', 'liquidação', 'liquidacao', 'imperdível'];
+
+  const checkForbiddenTerms = (title = '') => {
+    const found = forbiddenWordsList.filter(w => title.toLowerCase().includes(w));
+    return found;
+  };
+
+  const generateAutoTags = (name = '', sku = '') => {
+    const clean = name.toLowerCase();
+    let tags = ['peça original', `sku ${sku}`, 'seminovo higienizado', 'envio imediato'];
+    if (clean.includes('hb20')) tags.push('hyundai hb20', 'hb20 1.0', 'pecas hb20');
+    if (clean.includes('coletor')) tags.push('coletor admissao', 'injecao eletronica');
+    if (clean.includes('reservatorio')) tags.push('reservatorio partida fria', 'agua radiador');
+    if (clean.includes('trava')) tags.push('trava eletrica', 'fechadura porta');
+    if (clean.includes('flauta')) tags.push('bicos injetores', 'flauta combustivel');
+    return tags;
+  };
+
+  const generateAutoDescription = (p) => {
+    const tags = generateAutoTags(p.name, p.sku);
+    return `==================================================\n` +
+           `  ${p.name.toUpperCase()} - SKU: ${p.sku} | MLB: ${p.mlb || 'N/D'}\n` +
+           `==================================================\n\n` +
+           `🚗 **Descrição do Produto:**\n` +
+           `Peça original seminova, rigorosamente testada e higienizada em perfeito estado de funcionamento.\n\n` +
+           `📌 **Palavras-chave de Busca:** ${tags.join(', ')}\n\n` +
+           `📋 **Garantia e Procedência:**\n` +
+           `• Acompanha Nota Fiscal emitida em seu CPF/CNPJ.\n` +
+           `• 90 dias de garantia contra defeitos de funcionamento.\n` +
+           `• Pronta entrega com envio imediato via Mercado Envios.\n\n` +
+           `Qualquer dúvida, utilize o campo de perguntas abaixo!`;
   };
 
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Otimizador de Tráfego Orgânico (SEO Gratuito)</h2>
-        <p className="text-sm text-slate-400">Melhore seus títulos e descrições para aparecer nas primeiras posições do Mercado Livre sem pagar por cliques.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Otimizador de Tráfego Orgânico (SEO Gratuito & Avançado)</h2>
+        <p className="text-sm text-slate-400">Score de SEO, gerador automático de tags, verificador de termos proibidos e descrições padronizadas.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg border-l-4 border-l-emerald-400`}>
-          <div className="text-xs text-slate-400 font-semibold uppercase">Regra 1: Título Perfeito</div>
-          <div className="text-sm font-bold text-slate-200">Peça + Veículo + Ano + Original</div>
-          <p className="text-xs text-slate-400">Ex: Coletor Admissão Hb20 1.0 2015 Original</p>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-emerald-400`}>
+          <div className="text-xs text-slate-400 font-semibold uppercase">1. Título Ideal</div>
+          <div className="text-xs font-bold text-slate-200">Peça + Veículo + Ano</div>
         </div>
 
-        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg border-l-4 border-l-blue-400`}>
-          <div className="text-xs text-slate-400 font-semibold uppercase">Regra 2: Código OEM</div>
-          <div className="text-sm font-bold text-slate-200">Inclua o Código da Peça</div>
-          <p className="text-xs text-slate-400">Mecânicos buscam pelo código exato da montadora.</p>
+        <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-blue-400`}>
+          <div className="text-xs text-slate-400 font-semibold uppercase">2. Tags Automáticas</div>
+          <div className="text-xs font-bold text-slate-200">Gerador de Termos OEM</div>
         </div>
 
-        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg border-l-4 border-l-amber-400`}>
-          <div className="text-xs text-slate-400 font-semibold uppercase">Regra 3: Ficha Completa</div>
-          <div className="text-sm font-bold text-slate-200">Preencha 100% dos Campos</div>
-          <p className="text-xs text-slate-400">O algoritmo do ML prioriza anúncios completos.</p>
+        <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-amber-400`}>
+          <div className="text-xs text-slate-400 font-semibold uppercase">3. Termos Proibidos</div>
+          <div className="text-xs font-bold text-slate-200">Proteção contra Revisão</div>
+        </div>
+
+        <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-purple-400`}>
+          <div className="text-xs text-slate-400 font-semibold uppercase">4. Descrição Pronta</div>
+          <div className="text-xs font-bold text-slate-200">Geração Automática</div>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         {products.map((p, idx) => {
           const optimizedTitle = `${p.name} - Original e Garantido`.slice(0, 60);
+          const autoTags = generateAutoTags(p.name, p.sku);
+          const forbiddenFound = checkForbiddenTerms(p.name);
+          const autoDesc = generateAutoDescription(p);
+          
+          let seoScore = 70;
+          if (p.name.length <= 60) seoScore += 15;
+          if (p.mlb) seoScore += 15;
+          if (forbiddenFound.length > 0) seoScore -= 30;
 
           return (
-            <div key={p.id || idx} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-3 shadow-lg`}>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2.5 py-1 rounded font-bold">SKU: {p.sku}</span>
-                <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/10 text-emerald-400">
-                  Pronto para SEO Orgânico
+            <div key={p.id || idx} className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl`}>
+              <div className="flex justify-between items-center pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2.5 py-1 rounded font-bold">SKU: {p.sku}</span>
+                  <span className="font-bold text-slate-100 text-sm">{p.name}</span>
+                </div>
+                <span className={`text-xs px-3 py-1 rounded-full font-bold border ${seoScore >= 80 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
+                  Score SEO: {seoScore}%
                 </span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="p-3 bg-slate-800/40 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-semibold block">Título Atual:</span>
-                  <p className="text-slate-200 font-medium">{p.name}</p>
+
+              {/* ALERTA DE TERMOS PROIBIDOS */}
+              {forbiddenFound.length > 0 && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-xs flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+                  <span><strong>Atenção (Termo Proibido Detectado):</strong> "{forbiddenFound.join(', ')}". O Mercado Livre pode pausar o anúncio por uso de palavras apelativas.</span>
                 </div>
-                <div className="p-3 bg-blue-600/10 rounded-xl border border-blue-500/30 flex flex-col justify-between">
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                {/* TÍTULO OTIMIZADO */}
+                <div className="p-3 bg-blue-600/10 rounded-xl border border-blue-500/30 flex flex-col justify-between space-y-2">
                   <div>
-                    <span className="text-blue-400 font-semibold block">Sugestão Otimizada (Busca Orgânica):</span>
+                    <span className="text-blue-400 font-semibold block mb-1">Título Otimizado (SEO):</span>
                     <p className="text-slate-100 font-bold">{optimizedTitle}</p>
                   </div>
-                  <div className="flex justify-end pt-2">
-                    <button onClick={() => handleCopy(optimizedTitle, idx)} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-1">
+                  <div className="flex justify-end pt-1">
+                    <button onClick={() => handleCopy(optimizedTitle, idx)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center gap-1">
                       {copiedIndex === idx ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedIndex === idx ? 'Copiado!' : 'Copiar Título'}</span>
                     </button>
                   </div>
                 </div>
+
+                {/* TAGS AUTOMÁTICAS */}
+                <div className="p-3 bg-slate-800/50 rounded-xl border border-slate-700 flex flex-col justify-between space-y-2">
+                  <div>
+                    <span className="text-slate-400 font-semibold block mb-1 flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5 text-amber-400" /> Tags & Palavras-Chave Automáticas:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {autoTags.map((tag, tIdx) => (
+                        <span key={tIdx} className="bg-slate-800 text-amber-400 border border-slate-700 px-2 py-0.5 rounded-md font-mono text-[10px]">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-500 italic">Gerado com base na categoria e título da peça.</div>
+                </div>
+              </div>
+
+              {/* DESCRIÇÃO AUTOMÁTICA EM BLOCOS */}
+              <div className="pt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-slate-400 font-semibold text-xs flex items-center gap-1">
+                    <FileCode className="w-3.5 h-3.5 text-purple-400" /> Descrição Padrão Gerada Automaticamente:
+                  </span>
+                  <button onClick={() => handleCopy(autoDesc, idx, true)} className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold flex items-center gap-1">
+                    {copiedDescIndex === idx ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedDescIndex === idx ? 'Copiada!' : 'Copiar Descrição Completa'}</span>
+                  </button>
+                </div>
+                <pre className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] font-mono text-slate-300 whitespace-pre-wrap">{autoDesc}</pre>
               </div>
             </div>
           );
