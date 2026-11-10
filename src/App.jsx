@@ -537,9 +537,9 @@ function WholesaleCalculatorTab({ products, darkMode }) {
     wholesaleMinQty: 4
   };
 
-  const precoVarejo = currentProd.price || 150.00;
-  const precoAtacado = currentProd.wholesalePrice || (precoVarejo * 0.85);
-  const qtdMinimaAtacado = currentProd.wholesaleMinQty || 4;
+  const precoVarejo = Number(currentProd.price !== undefined ? currentProd.price : 150.00);
+  const precoAtacado = Number(currentProd.wholesalePrice !== undefined ? currentProd.wholesalePrice : (precoVarejo * 0.85));
+  const qtdMinimaAtacado = Number(currentProd.wholesaleMinQty !== undefined ? currentProd.wholesaleMinQty : 4);
 
   const ehAtacado = quantity >= qtdMinimaAtacado;
   const precoAplicado = ehAtacado ? precoAtacado : precoVarejo;
@@ -563,7 +563,7 @@ function WholesaleCalculatorTab({ products, darkMode }) {
               className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-semibold"
             >
               {products.map(p => (
-                <option key={p.id} value={p.sku}>SKU {p.sku} - {p.name}</option>
+                <option key={p.id} value={p.sku}>SKU {p.sku} - {p.name} (R$ {Number(p.price || 150).toFixed(2)})</option>
               ))}
             </select>
           </div>
@@ -2060,7 +2060,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           const status = String(row['Status'] || 'Ativo');
           const conta = String(row['Conta'] || 'DL Auto Peças');
           const currentCat = String(row['Categoria'] || 'Acessórios para Veículos > Peças Gerais');
-          const price = Number(row['Preço'] || 150.00);
+          const price = Number(row['Preço'] || row['Preço Varejo'] || 150.00);
           const wholesalePrice = Number(row['Preço Atacado'] || (price * 0.85));
           const wholesaleMinQty = Number(row['Qtd Atacado'] || 4);
           const costPrice = Number(row['Custo'] || 60.00);
@@ -2756,7 +2756,7 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-slate-400 font-medium">Custo (R$)</label>
-              <input type="number" step="0.01" value={formData.costPrice} onChange={(e) => setFormData({ ...formData, costPrice: Number(e.target.value) })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+              <input type="number" step="0.01" value={formData.costPrice} onChange(e) => setFormData({ ...formData, costPrice: Number(e.target.value) })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
             </div>
             <div>
               <label className="text-slate-400 font-medium">Estoque</label>
