@@ -68,13 +68,13 @@ const DEFAULT_RETURNS = [
 ];
 
 const DEFAULT_CATEGORIES = [
-  { id: 'MLB26330', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor > Correias', path: 'Mecânica > Motor' },
-  { id: 'MLB193498', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Ignição > Bobinas', path: 'Elétrica > Ignição' },
-  { id: 'MLB412351', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Lataria > Capôs', path: 'Lataria > Lataria Exterior' },
-  { id: 'MLB181157', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Habitáculo > Tapetes', path: 'Acabamentos > Interior' }
+  { id: 'MLB26330', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor > Correias', path: 'Mecânica > Motor', oem: '036109119P, CT881, 5507XS' },
+  { id: 'MLB193498', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Ignição > Bobinas', path: 'Elétrica > Ignição', oem: '032905106B, BI0017MM, CE20118' },
+  { id: 'MLB412351', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Lataria > Capôs', path: 'Lataria > Lataria Exterior', oem: '5U0823031, 5W0823031A' },
+  { id: 'MLB181157', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Habitáculo > Tapetes', path: 'Acabamentos > Interior', oem: '5U0061500, 377061500' }
 ];
 
-// --- COMPONENTE DE NAVEGAÇÃO REUTILIZÁVEL (NavItem corrigido) ---
+// --- COMPONENTE DE NAVEGAÇÃO REUTILIZÁVEL ---
 function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
   const isActive = active === id;
   return (
@@ -279,7 +279,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* MENU NAVEGAÇÃO COM O NAVITEM CORRIGIDO */}
+          {/* MENU NAVEGAÇÃO */}
           <nav className="p-3 space-y-1">
             <NavItem id="dashboard" label="Dashboard & Departamentos" icon={BarChart3} active={activeTab} setActive={setActiveTab} />
             <NavItem id="returns" label="Controle Devoluções" icon={RotateCcw} active={activeTab} setActive={setActiveTab} badge={returnsList.length} />
@@ -819,7 +819,7 @@ function ReturnsTab({ returnsList, currentUser, onAddReturn, onEditReturn, onDel
 }
 
 // ==========================================
-// MÓDULO 3: PESQUISA DE PREÇOS (Placeholder funcional)
+// MÓDULO 3: PESQUISA DE PREÇOS
 // ==========================================
 function PricingTab({ products, darkMode }) {
   return (
@@ -838,19 +838,132 @@ function PricingTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 4: ASSISTENTE DE TÍTULOS E IA (Placeholder funcional)
+// MÓDULO 4: ASSISTENTE DE TÍTULOS E IA (FUNCIONAL COM OEM)
 // ==========================================
 function AssistantTab({ darkMode }) {
+  const [oemCode, setOemCode] = useState('');
+  const [partName, setPartName] = useState('');
+  const [brand, setBrand] = useState('');
+  const [generatedTitles, setGeneratedTitles] = useState([]);
+  const [copiedIndex, setCopiedIndex] = useState(null);
+
+  const handleGenerate = (e) => {
+    e.preventDefault();
+    if (!partName && !oemCode) return;
+
+    const baseName = partName.trim() || 'Peça Automotiva';
+    const baseOem = oemCode.trim() ? `OEM ${oemCode.trim()}` : '';
+    const baseBrand = brand.trim() ? brand.trim() : '';
+
+    const titles = [
+      `${baseName} ${baseBrand} ${baseOem}`.trim(),
+      `Kit ${baseName} ${baseOem} Original`.trim(),
+      `${baseName} Alta Qualidade ${baseBrand} ${baseOem}`.trim(),
+      `Par ${baseName} Compatível ${baseOem}`.trim(),
+      `${baseName} Novo ${baseBrand} Pronta Entrega ${baseOem}`.trim()
+    ].map(t => t.length > 60 ? t.slice(0, 57) + '...' : t);
+
+    setGeneratedTitles(titles);
+  };
+
+  const handleCopy = (text, index) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Assistente de Títulos & Descrições IA</h2>
-        <p className="text-sm text-slate-400">Gere títulos otimizados focados em conversão e SEO para autopeças.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Assistente de Títulos & IA</h2>
+        <p className="text-sm text-slate-400">Insira o código OEM ou o nome da peça para gerar títulos otimizados para o Mercado Livre.</p>
       </div>
-      <div className={`p-8 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} text-center space-y-4`}>
-        <Sparkles className="w-12 h-12 mx-auto text-amber-400 stroke-1" />
-        <h3 className="text-lg font-bold">IA Pronta para Otimização</h3>
-        <p className="text-sm text-slate-400 max-w-md mx-auto">Insira o código OEM ou nome da peça para gerar títulos matadores de alta busca.</p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* FORMULÁRIO DE ENTRADA */}
+        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4`}>
+          <h3 className="font-bold text-slate-200 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-400" />
+            <span>Gerador de Títulos</span>
+          </h3>
+
+          <form onSubmit={handleGenerate} className="space-y-3 text-xs">
+            <div>
+              <label className="text-slate-400 font-medium block mb-1">Código OEM / Referência</label>
+              <input
+                type="text"
+                placeholder="Ex: 032905106B, CT881..."
+                value={oemCode}
+                onChange={(e) => setOemCode(e.target.value)}
+                className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-400 font-medium block mb-1">Nome da Peça</label>
+              <input
+                type="text"
+                placeholder="Ex: Bobina de Ignição, Correia Dentada..."
+                value={partName}
+                onChange={(e) => setPartName(e.target.value)}
+                className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-400 font-medium block mb-1">Marca / Aplicação (Opcional)</label>
+              <input
+                type="text"
+                placeholder="Ex: VW Gol 1.0 Flex, Bosch..."
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 mt-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl text-sm transition-transform active:scale-95 shadow-lg shadow-amber-400/20 flex items-center justify-center gap-2"
+            >
+              <Wand2 className="w-4 h-4" />
+              <span>Gerar Títulos Otimizados</span>
+            </button>
+          </form>
+        </div>
+
+        {/* ÁREA DE RESULTADOS */}
+        <div className={`lg:col-span-2 p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4`}>
+          <h3 className="font-bold text-slate-200 flex items-center justify-between">
+            <span>Sugestões de Títulos (Max 60 caracteres)</span>
+            <span className="text-xs font-mono text-slate-400">{generatedTitles.length} gerados</span>
+          </h3>
+
+          {generatedTitles.length === 0 ? (
+            <div className="p-12 text-center text-slate-500 border-2 border-dashed border-slate-800 rounded-xl space-y-2">
+              <Sparkles className="w-10 h-10 mx-auto text-amber-400/40" />
+              <p className="text-xs">Preencha o Código OEM ou Nome da peça ao lado e clique em **Gerar Títulos**.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {generatedTitles.map((title, idx) => (
+                <div key={idx} className="p-3.5 bg-slate-800/60 border border-slate-700/60 rounded-xl flex items-center justify-between gap-3 group hover:border-amber-400/50 transition-colors">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-slate-200">{title}</p>
+                    <span className="text-[10px] text-slate-400 font-mono">{title.length} / 60 caracteres</span>
+                  </div>
+
+                  <button
+                    onClick={() => handleCopy(title, idx)}
+                    className="px-3 py-1.5 bg-slate-700 hover:bg-amber-400 hover:text-slate-950 text-slate-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 flex-shrink-0"
+                  >
+                    {copiedIndex === idx ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedIndex === idx ? 'Copiado!' : 'Copiar'}</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -960,48 +1073,71 @@ function PhotoEditorTab({ darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 6: AUXILIAR DE CATEGORIAS
+// MÓDULO 6: AUXILIAR DE CATEGORIAS (BUSCA COM OEM)
 // ==========================================
 function CategoriesTab({ categories, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
+
   const filteredCategories = categories.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.path.toLowerCase().includes(searchTerm.toLowerCase())
+    c.path.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.oem && c.oem.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Auxiliar de Categorias Mercado Livre</h2>
-        <p className="text-sm text-slate-400">Consulte códigos oficiais de categorias.</p>
+        <p className="text-sm text-slate-400">Consulte os códigos de categoria oficiais por nome ou código OEM.</p>
       </div>
 
+      {/* BARRA DE BUSCA (NOME OU OEM) */}
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
         <input
           type="text"
-          placeholder="Digite o nome da peça..."
+          placeholder="Digite o nome da peça ou Código OEM (ex: 032905106B, CT881, Bobina)..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm border ${darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-300'} focus:outline-none focus:border-blue-500`}
+          className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm border ${
+            darkMode ? 'bg-slate-900 border-slate-800 text-white placeholder-slate-500' : 'bg-white border-slate-300'
+          } focus:outline-none focus:border-blue-500`}
         />
       </div>
 
+      {/* LISTA DE SUGESTÕES DE CATEGORIAS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredCategories.map((cat) => (
-          <div key={cat.id} className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2`}>
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-semibold">{cat.id}</span>
-              <button onClick={() => navigator.clipboard.writeText(cat.id)} className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copiar</span>
-              </button>
-            </div>
-            <h4 className="font-semibold text-sm text-slate-200">{cat.path}</h4>
-            <p className="text-xs text-slate-400">{cat.name}</p>
+        {filteredCategories.length === 0 ? (
+          <div className="col-span-2 p-8 text-center text-slate-500 bg-slate-900/50 rounded-2xl border border-slate-800">
+            Nenhuma categoria encontrada para o termo ou Código OEM informado.
           </div>
-        ))}
+        ) : (
+          filteredCategories.map((cat) => (
+            <div key={cat.id} className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2`}>
+              <div className="flex justify-between items-start">
+                <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-semibold">
+                  {cat.id}
+                </span>
+                <button 
+                  onClick={() => navigator.clipboard.writeText(cat.id)}
+                  className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copiar Código</span>
+                </button>
+              </div>
+              <h4 className="font-semibold text-sm text-slate-200">{cat.path}</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">{cat.name}</p>
+              
+              {cat.oem && (
+                <div className="pt-2 border-t border-slate-800/60 text-[11px] text-slate-400 font-mono">
+                  <span className="text-amber-400 font-semibold">OEMs compatíveis:</span> {cat.oem}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
