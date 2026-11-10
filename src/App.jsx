@@ -82,7 +82,9 @@ function detectCategoryFromTitle(title = '') {
 
 const DEFAULT_PRODUCTS = [
   { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v 3cc 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Ativo', date: '2026-11-10', conta: 'DL Auto Peças' },
-  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0 Comfort 12v 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Sob Revisão', date: '2026-11-10', conta: 'DL Auto Peças' }
+  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0 Comfort 12v 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Sob Revisão', date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p3', sku: '12529', mlb: 'MLB5539289953', name: 'Trava Elétrica Tampa Traseira Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Pausado', date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p4', sku: '12528', mlb: 'MLB7971719130', name: 'Flauta C/ Bicos Injetores Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Finalizado', date: '2026-11-10', conta: 'DL Auto Peças' }
 ];
 
 const DEFAULT_SALES = [
@@ -352,6 +354,7 @@ export default function App() {
           <SalesDashboardTab 
             salesList={salesList} 
             setSalesList={setSalesList} 
+            products={products}
             currentUser={currentUser} 
             darkMode={darkMode} 
           />
@@ -671,9 +674,9 @@ function TeamGuideTab({ darkMode }) {
 }
 
 // ==========================================
-// MÓDULO: DASHBOARD DE FATURAMENTO & VENDAS
+// MÓDULO: DASHBOARD DE FATURAMENTO & STATUS DOS ANÚNCIOS
 // ==========================================
-function SalesDashboardTab({ salesList, setSalesList, currentUser, darkMode }) {
+function SalesDashboardTab({ salesList, setSalesList, products, currentUser, darkMode }) {
   const [filterDate, setFilterDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [importStatus, setImportStatus] = useState('');
@@ -763,12 +766,19 @@ function SalesDashboardTab({ salesList, setSalesList, currentUser, darkMode }) {
   const totalCount = filteredSales.length;
   const averageTicket = totalCount > 0 ? (totalRevenue / totalCount) : 0;
 
+  // Contagem dos status dos anúncios cadastrados
+  const totalAds = products.length;
+  const countActive = products.filter(p => (p.status || 'Ativo').toLowerCase() === 'ativo').length;
+  const countReview = products.filter(p => (p.status || '').toLowerCase().includes('revisão')).length;
+  const countPaused = products.filter(p => (p.status || '').toLowerCase().includes('pausado')).length;
+  const countFinished = products.filter(p => (p.status || '').toLowerCase().includes('finalizado')).length;
+
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Dashboard de Faturamento & Vendas</h2>
-          <p className="text-sm text-slate-400">Importe sua planilha de vendas para calcular métricas por datas e salvar na nuvem.</p>
+          <h2 className="text-2xl font-bold tracking-tight">Dashboard de Faturamento & Status dos Anúncios</h2>
+          <p className="text-sm text-slate-400">Resumo financeiro e contagem em tempo real dos status de anúncios do Mercado Livre.</p>
         </div>
 
         <label className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer shadow-lg shadow-amber-400/20 transition-transform active:scale-95">
@@ -785,7 +795,42 @@ function SalesDashboardTab({ salesList, setSalesList, currentUser, darkMode }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* BLOCO DE STATUS DOS ANÚNCIOS */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <PackageCheck className="w-4 h-4 text-amber-400" />
+          <span>Visão Geral dos Anúncios no Mercado Livre ({totalAds} total)</span>
+        </h3>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-emerald-400`}>
+            <div className="text-xs text-slate-400 font-semibold">Anúncios Ativos</div>
+            <div className="text-2xl font-black font-mono text-emerald-400">{countActive}</div>
+            <div className="text-[10px] text-slate-500">Disponíveis para venda</div>
+          </div>
+
+          <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-blue-400`}>
+            <div className="text-xs text-slate-400 font-semibold">Sob Revisão</div>
+            <div className="text-2xl font-black font-mono text-blue-400">{countReview}</div>
+            <div className="text-[10px] text-slate-500">Em análise pelo ML</div>
+          </div>
+
+          <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-amber-400`}>
+            <div className="text-xs text-slate-400 font-semibold">Anúncios Pausados</div>
+            <div className="text-2xl font-black font-mono text-amber-400">{countPaused}</div>
+            <div className="text-[10px] text-slate-500">Estoque zerado ou pausa manual</div>
+          </div>
+
+          <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-red-400`}>
+            <div className="text-xs text-slate-400 font-semibold">Anúncios Finalizados</div>
+            <div className="text-2xl font-black font-mono text-red-400">{countFinished}</div>
+            <div className="text-[10px] text-slate-500">Expirados ou encerrados</div>
+          </div>
+        </div>
+      </div>
+
+      {/* BLOCO DE MÉTRICAS FINANCEIRAS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
         <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg`}>
           <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
             <span>Faturamento Total</span>
@@ -1276,13 +1321,12 @@ function CategoriesTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO ATUALIZADO: CONTROLE DE DEVOLUÇÕES (Com Cadastro & Exclusão)
+// MÓDULO: CONTROLE DE DEVOLUÇÕES
 // ==========================================
 function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Formulário para registrar nova devolução
   const [newReturn, setNewReturn] = useState({
     sku: '',
     name: '',
@@ -1415,7 +1459,6 @@ function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMo
         </div>
       </div>
 
-      {/* MODAL DE CADASTRO DE DEVOLUÇÃO */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className={`w-full max-w-md p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white text-slate-900'} space-y-4 shadow-2xl`}>
