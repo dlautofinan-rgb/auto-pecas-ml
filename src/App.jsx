@@ -20,7 +20,6 @@ import {
   Copy,
   Wand2,
   RefreshCw,
-  ShoppingBag,
   X,
   Check,
   Upload,
@@ -30,10 +29,10 @@ import {
   Shield,
   Briefcase,
   Calendar,
-  SlidersHorizontal
+  Layers as LayersIcon
 } from 'lucide-react';
 
-// --- DADOS INICIAIS DE EXEMPLO (RELATÓRIO DE PUBLICAÇÕES) ---
+// --- DADOS INICIAIS DE EXEMPLO ---
 const DEFAULT_PRODUCTS = [
   { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v 3cc 2015', dept: 'mecanica', status: 'Ativo', date: '2026-11-10', conta: 'DL Auto Peças' },
   { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0 Comfort 12v 2015', dept: 'mecanica', status: 'Sob Revisão', date: '2026-11-10', conta: 'DL Auto Peças' },
@@ -142,6 +141,16 @@ export default function App() {
     }
   };
 
+  const handleDeleteSheetByDate = (dateToDelete) => {
+    if (currentUser?.role !== 'admin') {
+      alert('Apenas administradores podem excluir planilhas lançadas.');
+      return;
+    }
+    if (window.confirm(`ATENÇÃO: Deseja realmente excluir todas as peças da data ${dateToDelete}?`)) {
+      setProducts(products.filter(p => p.date !== dateToDelete));
+    }
+  };
+
   const resetToDefaultData = () => {
     if (window.confirm('Deseja restaurar os dados padrão?')) {
       setProducts(DEFAULT_PRODUCTS);
@@ -203,6 +212,7 @@ export default function App() {
 
           <nav className="p-3 space-y-1">
             <NavItem id="import" label="Importar Planilha & Datas" icon={FileSpreadsheet} active={activeTab} setActive={setActiveTab} badge={products.length} />
+            <NavItem id="manage-sheets" label="Gerenciar / Excluir Planilhas" icon={Trash2} active={activeTab} setActive={setActiveTab} />
             <NavItem id="assistant" label="Editor de Títulos (IA)" icon={Sparkles} active={activeTab} setActive={setActiveTab} badge={products.filter(p => p.name.length > 55).length} />
             <NavItem id="categories" label="Editor de Categorias & OEM" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
             <NavItem id="returns" label="Controle Devoluções" icon={RotateCcw} active={activeTab} setActive={setActiveTab} />
@@ -240,6 +250,15 @@ export default function App() {
             onAddProduct={() => { setEditingProduct(null); setIsProductModalOpen(true); }}
             onEditProduct={(p) => { setEditingProduct(p); setIsProductModalOpen(true); }}
             onDeleteProduct={handleDeleteProduct}
+            darkMode={darkMode} 
+          />
+        )}
+
+        {activeTab === 'manage-sheets' && (
+          <ManageSheetsTab 
+            products={products} 
+            onDeleteSheet={handleDeleteSheetByDate} 
+            currentUser={currentUser} 
             darkMode={darkMode} 
           />
         )}
@@ -419,7 +438,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
         });
 
         setProducts([...imported, ...products]);
-        setImportStatus(`Sucesso! ${imported.length} peças importadas da planilha "${file.name}" e já enviadas para os editores de Títulos e Categorias.`);
+        setImportStatus(`Sucesso! ${imported.length} peças importadas da planilha "${file.name}" e já enviadas para os editores.`);
       } catch (err) {
         console.error(err);
         setImportStatus('Erro ao ler a planilha Excel.');
@@ -558,7 +577,72 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
 }
 
 // ==========================================
-// MÓDULO 2: EDITOR DE TÍTULOS (IA) AUTOMÁTICO
+// NOVO MÓDULO: GERENCIAR / EXCLUIR PLANILHAS LANÇADAS
+// ==========================================
+function ManageSheetsTab({ products, onDeleteSheet, currentUser, darkMode }) {
+  // Agrupa os produtos por data de publicação (cada data representa uma planilha/lote lançado)
+  const sheetsMap = {};
+  products.forEach(p => {
+    const d = p.date || '2026-11-10';
+    if (!sheetsMap[d]) {
+      sheetsMap[d] = { date: d, count: 0, items: [] };
+    }
+    sheetsMap[d].count += 1;
+    sheetsMap[d].items.push(p);
+  });
+
+  const sheetsList = Object.values(sheetsMap).sort((a, b) => b.date.localeCompare(a.date));
+
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">Gerenciar e Excluir Planilhas Lançadas</h2>
+        <p className="text-sm text-slate-400">Visualize todas as planilhas importadas por dia e exclua lotes inteiros se necessário.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {sheetsList.length === 0 ? (
+          <div className="col-span-full p-8 text-center text-slate-500">Nenhuma planilha lançada no sistema.</div>
+        ) : (
+          sheetsList.map((sheet) => (
+            <div key={sheet.date} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl flex flex-col justify-between`}>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-amber-400" />
+                    <span className="font-bold text-slate-200 font-mono text-base">{sheet.date}</span>
+                  </div>
+                  <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full border border-blue-500/20 font-bold">
+                    {sheet.count} {sheet.count === 1 ? 'peça' : 'peças'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">Lote de publicações importado para esta data.</p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+                <span className="text-[10px] text-slate-500 font-mono">Status: Ativo no Sistema</span>
+                {currentUser?.role === 'admin' ? (
+                  <button
+                    onClick={() => onDeleteSheet(sheet.date)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-xs font-bold border border-red-500/25 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Excluir Planilha</span>
+                  </button>
+                ) : (
+                  <span className="text-[10px] text-slate-500 italic">Requer Admin</span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// MÓDULO 3: EDITOR DE TÍTULOS (IA) AUTOMÁTICO
 // ==========================================
 function AssistantTab({ products, darkMode }) {
   const [copiedIndex, setCopiedIndex] = useState(null);
@@ -628,7 +712,7 @@ function AssistantTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 3: EDITOR DE CATEGORIAS & OEM AUTOMÁTICO
+// MÓDULO 4: EDITOR DE CATEGORIAS & OEM AUTOMÁTICO
 // ==========================================
 function CategoriesTab({ products, darkMode }) {
   const [copiedItem, setCopiedItem] = useState(null);
@@ -719,7 +803,7 @@ Antes de efetuar a compra, confirme a numeração registrada na sua peça origin
 }
 
 // ==========================================
-// MÓDULO 4: CONTROLE DE DEVOLUÇÕES
+// MÓDULO 5: CONTROLE DE DEVOLUÇÕES
 // ==========================================
 function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -774,7 +858,7 @@ function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMo
 }
 
 // ==========================================
-// MÓDULO 5: EDITOR DE FOTOS (Fundo Branco)
+// MÓDULO 6: EDITOR DE FOTOS (Fundo Branco)
 // ==========================================
 function PhotoEditorTab({ darkMode }) {
   const [imageSrc, setImageSrc] = useState(null);
