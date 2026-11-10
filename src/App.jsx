@@ -86,12 +86,11 @@ const DEFAULT_PRODUCTS = [
 ];
 
 const DEFAULT_SALES = [
-  { id: 's1', saleId: '3506074', client: 'Italo Ferreira Matos', value: 248.17, discount: 50.83, date: '2026-11-09', payment: 'Transferência Bancária', nfe: '10733' },
-  { id: 's2', saleId: '3499524', client: 'Bruno Joseph de Souza', value: 124.50, discount: 25.50, date: '2026-11-07', payment: 'Cartão de Crédito', nfe: '10725' }
+  { id: 's1', saleId: '3506074', client: 'Italo Ferreira Matos', value: 248.17, discount: 50.83, date: '2026-11-09', payment: 'Transferência Bancária', nfe: '10733' }
 ];
 
 const DEFAULT_RETURNS = [
-  { id: 'r1', date: '2026-11-10', sku: '12530', name: 'Reservatório Partida Fria Hyundai Hb20', qty: 1, reason: 'Erro do Comprador', status: 'Reintegrado', notes: 'Comprado modelo errado.' }
+  { id: 'r1', date: '2026-11-10', sku: '12530', name: 'Reservatório Partida Fria Hyundai Hb20', value: 120.00, qty: 1, reason: 'Erro do Comprador', status: 'Reintegrado', notes: 'Comprado modelo errado.' }
 ];
 
 function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
@@ -322,7 +321,7 @@ export default function App() {
             <NavItem id="team-guide" label="Guia & Motivos de Status" icon={HelpCircle} active={activeTab} setActive={setActiveTab} />
             <NavItem id="assistant" label="Editor de Títulos (IA)" icon={Sparkles} active={activeTab} setActive={setActiveTab} />
             <NavItem id="categories" label="Editor de Categorias & OEM" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
-            <NavItem id="returns" label="Controle Devoluções" icon={RotateCcw} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="returns" label="Controle Devoluções" icon={RotateCcw} active={activeTab} setActive={setActiveTab} badge={returnsList.length} />
             <NavItem id="photo" label="Editor Fundo Branco" icon={ImageIcon} active={activeTab} setActive={setActiveTab} />
           </nav>
         </div>
@@ -1277,45 +1276,235 @@ function CategoriesTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO: CONTROLE DE DEVOLUÇÕES
+// MÓDULO ATUALIZADO: CONTROLE DE DEVOLUÇÕES (Com Cadastro & Exclusão)
 // ==========================================
 function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const filteredReturns = returnsList.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()) || r.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Formulário para registrar nova devolução
+  const [newReturn, setNewReturn] = useState({
+    sku: '',
+    name: '',
+    value: '',
+    date: new Date().toISOString().slice(0, 10),
+    reason: 'Arrependimento / Erro do Comprador',
+    status: 'Pendente de Análise',
+    notes: ''
+  });
+
+  const handleAddReturn = (e) => {
+    e.preventDefault();
+    if (!newReturn.name || !newReturn.value) {
+      alert('Preencha o nome da peça e o valor.');
+      return;
+    }
+
+    const item = {
+      id: 'ret_' + Date.now(),
+      date: newReturn.date,
+      sku: newReturn.sku || 'N/D',
+      name: newReturn.name,
+      value: Number(newReturn.value),
+      reason: newReturn.reason,
+      status: newReturn.status,
+      notes: newReturn.notes
+    };
+
+    setReturnsList([item, ...returnsList]);
+    setIsModalOpen(false);
+    setNewReturn({
+      sku: '',
+      name: '',
+      value: '',
+      date: new Date().toISOString().slice(0, 10),
+      reason: 'Arrependimento / Erro do Comprador',
+      status: 'Pendente de Análise',
+      notes: ''
+    });
+  };
+
+  const handleDeleteReturn = (id) => {
+    if (window.confirm('Tem certeza que deseja excluir este registro de devolução?')) {
+      setReturnsList(returnsList.filter(r => r.id !== id));
+    }
+  };
+
+  const filteredReturns = returnsList.filter(r => 
+    r.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    r.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Controle Devoluções</h2>
-        <p className="text-sm text-slate-400">Monitore devoluções salvas no Firebase.</p>
-      </div>
-      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden`}>
-        <div className="p-4 border-b border-slate-800">
-          <input type="text" placeholder="Pesquisar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs" />
+      <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Controle de Devoluções</h2>
+          <p className="text-sm text-slate-400">Marque peças devolvidas, valores, datas e gerencie o estoque.</p>
         </div>
+
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg flex items-center gap-2 transition-transform active:scale-95"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Registrar Nova Devolução</span>
+        </button>
+      </div>
+
+      <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex items-center gap-4`}>
+        <Search className="w-4 h-4 text-slate-500" />
+        <input
+          type="text"
+          placeholder="Pesquisar por Peça ou SKU..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-transparent text-sm text-white focus:outline-none"
+        />
+      </div>
+
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
-                <th className="p-4">Data</th>
+                <th className="p-4">Data da Devolução</th>
                 <th className="p-4">Peça / SKU</th>
                 <th className="p-4">Motivo</th>
+                <th className="p-4 text-right">Valor</th>
                 <th className="p-4">Status</th>
+                <th className="p-4 text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
-              {filteredReturns.map(r => (
-                <tr key={r.id} className="hover:bg-slate-800/25">
-                  <td className="p-4 font-mono text-slate-400">{r.date}</td>
-                  <td className="p-4 font-semibold text-slate-200">{r.name} <span className="text-amber-400 font-mono">(SKU: {r.sku})</span></td>
-                  <td className="p-4">{r.reason}</td>
-                  <td className="p-4"><span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{r.status}</span></td>
+              {filteredReturns.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-slate-500">Nenhuma devolução registrada.</td>
                 </tr>
-              ))}
+              ) : (
+                filteredReturns.map(r => (
+                  <tr key={r.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="p-4 font-mono text-slate-400">{r.date}</td>
+                    <td className="p-4">
+                      <div className="font-bold text-slate-200">{r.name}</div>
+                      <div className="text-amber-400 font-mono text-[10px]">SKU: {r.sku}</div>
+                    </td>
+                    <td className="p-4 text-slate-300">{r.reason}</td>
+                    <td className="p-4 text-right font-mono font-bold text-red-400">
+                      R$ {Number(r.value || 0).toFixed(2)}
+                    </td>
+                    <td className="p-4">
+                      <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <button 
+                        onClick={() => handleDeleteReturn(r.id)} 
+                        className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 transition-colors"
+                        title="Excluir Devolução"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* MODAL DE CADASTRO DE DEVOLUÇÃO */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`w-full max-w-md p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white text-slate-900'} space-y-4 shadow-2xl`}>
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-lg">Registrar Nova Devolução</h3>
+              <button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5" /></button>
+            </div>
+            
+            <form onSubmit={handleAddReturn} className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-400 font-medium">Nome da Peça</label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: Coletor Admissão Hb20..." 
+                  value={newReturn.name} 
+                  onChange={(e) => setNewReturn({ ...newReturn, name: e.target.value })} 
+                  className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" 
+                  required 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 font-medium">SKU</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ex: 12531" 
+                    value={newReturn.sku} 
+                    onChange={(e) => setNewReturn({ ...newReturn, sku: e.target.value })} 
+                    className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" 
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 font-medium">Valor (R$)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="0.00" 
+                    value={newReturn.value} 
+                    onChange={(e) => setNewReturn({ ...newReturn, value: e.target.value })} 
+                    className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 font-medium">Data da Devolução</label>
+                  <input 
+                    type="date" 
+                    value={newReturn.date} 
+                    onChange={(e) => setNewReturn({ ...newReturn, date: e.target.value })} 
+                    className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" 
+                    required 
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 font-medium">Status</label>
+                  <select 
+                    value={newReturn.status} 
+                    onChange={(e) => setNewReturn({ ...newReturn, status: e.target.value })}
+                    className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white"
+                  >
+                    <option value="Pendente de Análise">Pendente de Análise</option>
+                    <option value="Reintegrado ao Estoque">Reintegrado ao Estoque</option>
+                    <option value="Avariado / Descarte">Avariado / Descarte</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-400 font-medium">Motivo</label>
+                <input 
+                  type="text" 
+                  value={newReturn.reason} 
+                  onChange={(e) => setNewReturn({ ...newReturn, reason: e.target.value })} 
+                  className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" 
+                />
+              </div>
+
+              <div className="pt-3 flex gap-2">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
+                <button type="submit" className="flex-1 py-2 bg-amber-400 font-bold text-slate-950 rounded-xl">Salvar Devolução</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
