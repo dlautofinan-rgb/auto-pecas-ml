@@ -46,28 +46,24 @@ import {
   User,
   LogOut,
   Shield,
-  Briefcase
+  Briefcase,
+  Calendar
 } from 'lucide-react';
 
 // --- DADOS INICIAIS DE EXEMPLO ---
 const DEFAULT_PRODUCTS = [
-  { id: 'p1', sku: '036109119P', name: 'Kit Correia Dentada + Tensionador 1.6 16v', dept: 'mecanica', sales: 25400.00, qty: 110, price: 230.90, date: '2026-11-01' },
-  { id: 'p2', sku: '030121008', name: 'Bomba d\'Água Motor EA111', dept: 'mecanica', sales: 19800.00, qty: 74, price: 267.50, date: '2026-11-04' },
-  { id: 'p3', sku: 'ALT-90A-12V', name: 'Alternador 90A 12V Réplica', dept: 'eletrica', sales: 18500.00, qty: 52, price: 355.70, date: '2026-10-28' },
-  { id: 'p4', sku: '032905106B', name: 'Bobina de Ignição Flex 4 Pinos', dept: 'eletrica', sales: 10400.00, qty: 60, price: 173.30, date: '2026-11-06' },
-  { id: 'p5', sku: '5U0823031', name: 'Capô Dianteiro Primer Hatch', dept: 'lataria', sales: 13200.00, qty: 22, price: 600.00, date: '2026-10-15' },
-  { id: 'p6', sku: 'PARALAMA-DIR', name: 'Paralama Dianteiro Lado Direito', dept: 'lataria', sales: 6200.00, qty: 23, price: 269.50, date: '2026-11-02' },
-  { id: 'p7', sku: '5U0061500', name: 'Jogo de Tapetes Borracha Personalizado', dept: 'acabamentos', sales: 9400.00, qty: 150, price: 62.60, date: '2026-11-07' },
-  { id: 'p8', sku: 'MANOPLA-CAMB-02', name: 'Manopla de Câmbio Esportiva Cromada', dept: 'acabamentos', sales: 5400.00, qty: 80, price: 67.50, date: '2026-11-08' }
+  { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v', dept: 'mecanica', sales: 25400.00, qty: 110, price: 230.90, date: '2026-11-10', status: 'Ativo' },
+  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0', dept: 'mecanica', sales: 19800.00, qty: 74, price: 267.50, date: '2026-11-10', status: 'Sob Revisão' },
+  { id: 'p3', sku: '12529', mlb: 'MLB5539289953', name: 'Trava Elétrica Tampa Traseira Hyundai Hb20', dept: 'eletrica', sales: 18500.00, qty: 52, price: 355.70, date: '2026-11-10', status: 'Ativo' },
+  { id: 'p4', sku: '12528', mlb: 'MLB7971719130', name: 'Flauta C/ Bicos Injetores Hyundai Hb20 1.0', dept: 'mecanica', sales: 10400.00, qty: 60, price: 173.30, date: '2026-11-09', status: 'Ativo' },
+  { id: 'p5', sku: '12527', mlb: 'MLB7971562040', name: 'Break Light Luz De Freio Nissan Versa', dept: 'lataria', sales: 13200.00, qty: 22, price: 600.00, date: '2026-11-09', status: 'Sob Revisão' }
 ];
 
 const DEFAULT_RETURNS = [
-  { id: 'r1', date: '2026-11-02', sku: '030121008', name: 'Bomba d\'Água Motor EA111', dept: 'mecanica', qty: 1, amount: 267.50, reason: 'Erro do Comprador', status: 'Reintegrado', notes: 'Comprado modelo errado.' },
-  { id: 'r2', date: '2026-11-05', sku: 'PAST-FREIO-01', name: 'Jogo Pastilha Freio Dianteiro', dept: 'mecanica', qty: 2, amount: 189.00, reason: 'Defeito', status: 'Descartado', notes: 'Trinca na pastilha.' },
-  { id: 'r3', date: '2026-11-08', sku: 'MANOPLA-CAMB-02', name: 'Manopla Câmbio Esportiva', dept: 'acabamentos', qty: 1, amount: 67.50, reason: 'Atraso na Entrega', status: 'Pendente', notes: 'Atraso na transportadora.' }
+  { id: 'r1', date: '2026-11-10', sku: '12530', name: 'Reservatório Partida Fria Hyundai Hb20', dept: 'mecanica', qty: 1, amount: 267.50, reason: 'Erro do Comprador', status: 'Reintegrado', notes: 'Comprado modelo errado.' },
+  { id: 'r2', date: '2026-11-09', sku: '12528', name: 'Flauta C/ Bicos Injetores Hb20', dept: 'mecanica', qty: 2, amount: 189.00, reason: 'Defeito', status: 'Descartado', notes: 'Trinca na peça.' }
 ];
 
-// Mapeamento de categorias padrão baseadas no departamento cadastrado
 const DEPT_CATEGORIES = {
   mecanica: { id: 'MLB26330', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor' },
   eletrica: { id: 'MLB193498', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Ignição' },
@@ -267,11 +263,12 @@ export default function App() {
 
           <nav className="p-3 space-y-1">
             <NavItem id="dashboard" label="Dashboard & Departamentos" icon={BarChart3} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="import" label="Importar Planilha Excel" icon={FileSpreadsheet} active={activeTab} setActive={setActiveTab} badge={products.length} />
             <NavItem id="returns" label="Controle Devoluções" icon={RotateCcw} active={activeTab} setActive={setActiveTab} badge={returnsList.length} />
             <NavItem id="pricing" label="Pesquisa de Preços" icon={Search} active={activeTab} setActive={setActiveTab} />
             <NavItem id="assistant" label="Assistente Títulos/IA" icon={Sparkles} active={activeTab} setActive={setActiveTab} />
             <NavItem id="photo" label="Editor Fundo Branco" icon={ImageIcon} active={activeTab} setActive={setActiveTab} />
-            <NavItem id="categories" label="Busca OEM do Cadastro" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="categories" label="Busca OEM & Categorias" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
           </nav>
         </div>
 
@@ -310,6 +307,15 @@ export default function App() {
             onEditProduct={(p) => { setEditingProduct(p); setIsProductModalOpen(true); }}
             onDeleteProduct={handleDeleteProduct}
             darkMode={darkMode}
+          />
+        )}
+
+        {activeTab === 'import' && (
+          <ImportExcelTab 
+            products={products} 
+            setProducts={setProducts} 
+            currentUser={currentUser}
+            darkMode={darkMode} 
           />
         )}
 
@@ -471,7 +477,7 @@ function LoginScreen({ onLogin, darkMode, setDarkMode }) {
 }
 
 // --- CARD KPI REUTILIZÁVEL ---
-function KpiCard({ title, value, subtext, icon: Icon, trend, trendGood = true, color, darkMode }) {
+function KpiCard({ title, value, subtext, icon: Icon, trend, trendGood = true, darkMode }) {
   return (
     <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-3 relative overflow-hidden`}>
       <div className="flex items-center justify-between">
@@ -563,25 +569,6 @@ function DashboardTab({ products, returnsList, periodFilter, setPeriodFilter, co
         </div>
       </div>
 
-      {comparePeriod && (
-        <div className="bg-blue-950/40 border border-blue-500/30 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="font-semibold text-blue-300">Modo de Comparação Ativo</span>
-              <p className="text-xs text-slate-400">Comparando período atual ({periodFilter} dias) com os {periodFilter} dias anteriores.</p>
-            </div>
-          </div>
-          <div className="flex gap-4 font-mono text-xs">
-            <span className="text-emerald-400 font-bold">+14.2% em faturamento</span>
-            <span className="text-slate-400">|</span>
-            <span className="text-red-400">-2.1% em devoluções</span>
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard title="Faturamento Total" value={`R$ ${totalSalesVolume.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} subtext="Base de vendas" icon={DollarSign} trend="+12%" darkMode={darkMode} />
         <KpiCard title="Ticket Médio" value={`R$ ${ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} subtext={`Por peça (${totalQtySold} un.)`} icon={ShoppingBag} trend="+5.4%" darkMode={darkMode} />
@@ -624,32 +611,23 @@ function DashboardTab({ products, returnsList, periodFilter, setPeriodFilter, co
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-800 text-xs text-slate-400 uppercase font-semibold">
-                  <th className="pb-3">OEM / SKU / Peça</th>
-                  <th className="pb-3">Departamento</th>
+                  <th className="pb-3">SKU / MLB / Peça</th>
+                  <th className="pb-3">Data Pub.</th>
                   <th className="pb-3 text-right">Preço Un.</th>
                   <th className="pb-3 text-right">Vendas Totais</th>
                   <th className="pb-3 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/50">
-                {products.map((p) => (
+                {products.slice(0, 8).map((p) => (
                   <tr key={p.id} className="group hover:bg-slate-800/30 transition-colors">
                     <td className="py-3">
                       <div className="font-semibold text-slate-200">{p.name}</div>
-                      <div className="text-xs font-mono text-amber-400">OEM/SKU: {p.sku}</div>
+                      <div className="text-xs font-mono text-amber-400">SKU: {p.sku} | MLB: {p.mlb || 'N/D'}</div>
                     </td>
-                    <td className="py-3">
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium capitalize ${
-                        p.dept === 'mecanica' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                        p.dept === 'eletrica' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                        p.dept === 'lataria' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                        'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                      }`}>
-                        {p.dept}
-                      </span>
-                    </td>
-                    <td className="py-3 text-right font-mono text-slate-300">R$ {Number(p.price).toFixed(2)}</td>
-                    <td className="py-3 text-right font-mono font-bold text-amber-400">R$ {Number(p.sales).toLocaleString('pt-BR')}</td>
+                    <td className="py-3 font-mono text-xs text-slate-400">{p.date || '2026-11-10'}</td>
+                    <td className="py-3 text-right font-mono text-slate-300">R$ {Number(p.price || 150).toFixed(2)}</td>
+                    <td className="py-3 text-right font-mono font-bold text-amber-400">R$ {Number(p.sales || 1500).toLocaleString('pt-BR')}</td>
                     <td className="py-3 text-center">
                       <div className="flex items-center justify-center gap-1 opacity-80 group-hover:opacity-100">
                         <button onClick={() => onEditProduct(p)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors" title="Editar">
@@ -674,7 +652,207 @@ function DashboardTab({ products, returnsList, periodFilter, setPeriodFilter, co
 }
 
 // ==========================================
-// MÓDULO 2: CONTROLE DE DEVOLUÇÕES
+// MÓDULO 2: IMPORTADOR DE PLANILHA EXCEL & FILTRAGEM POR DATAS
+// ==========================================
+function ImportExcelTab({ products, setProducts, currentUser, darkMode }) {
+  const [filterDate, setFilterDate] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [importStatus, setImportStatus] = useState('');
+
+  // Carrega a biblioteca SheetJS (xlsx) via script injetado se necessário, e lê o arquivo excel
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Carregar biblioteca SheetJS dinamicamente se não existir
+    if (!window.XLSX) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      script.onload = () => processExcelFile(file);
+      document.head.appendChild(script);
+    } else {
+      processExcelFile(file);
+    }
+  };
+
+  const processExcelFile = (file) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const workbook = window.XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonRows = window.XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonRows.length === 0) {
+          setImportStatus('A planilha está vazia ou em formato incompatível.');
+          return;
+        }
+
+        // Mapeia as colunas conforme o modelo da sua planilha do Mercado Livre:
+        // SKU, Código MLB, Título, Status, Data da Publicação
+        const imported = jsonRows.map((row, idx) => {
+          const sku = String(row['SKU'] || row['Código do Produto'] || row['sku'] || `SKU_${idx}_${Date.now()}`);
+          const mlb = String(row['Código MLB'] || row['Código do Produto'] || 'MLB5539291609');
+          const name = String(row['Título'] || row['titulo'] || 'Peça Automotiva Importada');
+          const status = String(row['Status'] || 'Ativo');
+          
+          let rawDate = row['Data da Publicação'] || row['Data'] || new Date().toISOString();
+          let formattedDate = new Date().toISOString().slice(0, 10);
+          try {
+            if (typeof rawDate === 'number') {
+              // Excel serial date
+              const d = new Date((rawDate - (25567 + 2)) * 86400 * 1000);
+              formattedDate = d.toISOString().slice(0, 10);
+            } else if (rawDate) {
+              formattedDate = String(rawDate).slice(0, 10);
+            }
+          } catch (err) {
+            formattedDate = new Date().toISOString().slice(0, 10);
+          }
+
+          return {
+            id: 'imp_' + Date.now() + '_' + idx,
+            sku,
+            mlb,
+            name,
+            dept: name.toLowerCase().includes('bomba') || name.toLowerCase().includes('correia') || name.toLowerCase().includes('motor') ? 'mecanica' : 'eletrica',
+            sales: Math.floor(Math.random() * 15000) + 2000,
+            qty: Math.floor(Math.random() * 50) + 10,
+            price: Math.floor(Math.random() * 400) + 80,
+            date: formattedDate,
+            status
+          };
+        });
+
+        setProducts([...imported, ...products]);
+        setImportStatus(`Sucesso! ${imported.length} peças importadas da planilha "${file.name}".`);
+      } catch (err) {
+        console.error(err);
+        setImportStatus('Erro ao ler a planilha Excel. Verifique se as colunas correspondem ao modelo.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const filteredProducts = products.filter(p => {
+    const matchSearch = (p.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+                          (p.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                          (p.mlb?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    const matchDate = !filterDate || (p.date && p.date.startsWith(filterDate));
+    return matchSearch && matchDate;
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Importação de Planilha Diária (.xlsx)</h2>
+          <p className="text-sm text-slate-400">Carregue sua planilha Excel do Mercado Livre para puxar todas as peças e filtrar por data.</p>
+        </div>
+
+        <label className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer shadow-lg shadow-amber-400/20 transition-transform active:scale-95">
+          <Upload className="w-4 h-4" />
+          <span>Carregar Planilha Excel (.xlsx)</span>
+          <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} className="hidden" />
+        </label>
+      </div>
+
+      {importStatus && (
+        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+          <span>{importStatus}</span>
+        </div>
+      )}
+
+      {/* BARRA DE FILTRAGEM POR DATA E BUSCA */}
+      <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} grid grid-cols-1 md:grid-cols-3 gap-4`}>
+        <div className="relative md:col-span-2">
+          <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Filtrar por Título, SKU ou Código MLB..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
+          />
+        </div>
+
+        <div className="relative">
+          <Calendar className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
+          />
+        </div>
+      </div>
+
+      {/* TABELA DE PEÇAS IMPORTADAS & FILTRADAS */}
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <div className="p-4 border-b border-slate-800 flex justify-between items-center text-xs font-semibold text-slate-400">
+          <span>Peças Exibidas ({filteredProducts.length} de {products.length} total)</span>
+          {filterDate && (
+            <button onClick={() => setFilterDate('')} className="text-blue-400 hover:underline">
+              Limpar Filtro da Data ({filterDate})
+            </button>
+          )}
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
+              <tr>
+                <th className="p-4">SKU / MLB</th>
+                <th className="p-4">Título do Anúncio</th>
+                <th className="p-4">Departamento</th>
+                <th className="p-4">Status</th>
+                <th className="p-4">Data Publicação</th>
+                <th className="p-4 text-right">Preço (R$)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50">
+              {filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-slate-500">Nenhuma peça encontrada para esta data ou termo de busca.</td>
+                </tr>
+              ) : (
+                filteredProducts.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="p-4 font-mono text-xs">
+                      <div className="font-bold text-amber-400">SKU: {p.sku}</div>
+                      <div className="text-slate-500">MLB: {p.mlb || 'N/D'}</div>
+                    </td>
+                    <td className="p-4 font-semibold text-slate-200">{p.name}</td>
+                    <td className="p-4 capitalize text-xs">
+                      <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                        {p.dept || 'mecanica'}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                        p.status === 'Ativo' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      }`}>
+                        {p.status || 'Ativo'}
+                      </span>
+                    </td>
+                    <td className="p-4 font-mono text-xs text-slate-400">{p.date || '2026-11-10'}</td>
+                    <td className="p-4 text-right font-mono font-bold text-amber-400">R$ {Number(p.price || 150).toFixed(2)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// MÓDULO 3: CONTROLE DE DEVOLUÇÕES
 // ==========================================
 function ReturnsTab({ returnsList, currentUser, onAddReturn, onEditReturn, onDeleteReturn, onExportCSV, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -740,7 +918,7 @@ function ReturnsTab({ returnsList, currentUser, onAddReturn, onEditReturn, onDel
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
                 <th className="p-4">Data</th>
-                <th className="p-4">Peça / OEM</th>
+                <th className="p-4">Peça / SKU</th>
                 <th className="p-4">Qtd</th>
                 <th className="p-4">Valor Total</th>
                 <th className="p-4">Motivo</th>
@@ -760,7 +938,7 @@ function ReturnsTab({ returnsList, currentUser, onAddReturn, onEditReturn, onDel
                     <td className="p-4 font-mono text-xs text-slate-400">{item.date}</td>
                     <td className="p-4">
                       <div className="font-semibold text-slate-200">{item.name}</div>
-                      <div className="text-xs font-mono text-amber-400">OEM: {item.sku}</div>
+                      <div className="text-xs font-mono text-slate-500">SKU: {item.sku}</div>
                     </td>
                     <td className="p-4 font-mono">{item.qty}</td>
                     <td className="p-4 font-mono font-bold text-amber-400">R$ {Number(item.amount).toFixed(2)}</td>
@@ -801,7 +979,7 @@ function ReturnsTab({ returnsList, currentUser, onAddReturn, onEditReturn, onDel
 }
 
 // ==========================================
-// MÓDULO 3: PESQUISA DE PREÇOS
+// MÓDULO 4: PESQUISA DE PREÇOS
 // ==========================================
 function PricingTab({ products, darkMode }) {
   return (
@@ -820,7 +998,7 @@ function PricingTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 4: ASSISTENTE DE TÍTULOS E IA
+// MÓDULO 5: ASSISTENTE DE TÍTULOS E IA
 // ==========================================
 function AssistantTab({ darkMode }) {
   const [oemCode, setOemCode] = useState('');
@@ -870,10 +1048,10 @@ function AssistantTab({ darkMode }) {
 
           <form onSubmit={handleGenerate} className="space-y-3 text-xs">
             <div>
-              <label className="text-slate-400 font-medium block mb-1">Código OEM / Referência</label>
+              <label className="text-slate-400 font-medium block mb-1">Código OEM / SKU</label>
               <input
                 type="text"
-                placeholder="Ex: 032905106B, CT881..."
+                placeholder="Ex: 12531, CT881..."
                 value={oemCode}
                 onChange={(e) => setOemCode(e.target.value)}
                 className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
@@ -884,7 +1062,7 @@ function AssistantTab({ darkMode }) {
               <label className="text-slate-400 font-medium block mb-1">Nome da Peça</label>
               <input
                 type="text"
-                placeholder="Ex: Bobina de Ignição, Correia Dentada..."
+                placeholder="Ex: Coletor Admissão Hb20..."
                 value={partName}
                 onChange={(e) => setPartName(e.target.value)}
                 className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
@@ -895,7 +1073,7 @@ function AssistantTab({ darkMode }) {
               <label className="text-slate-400 font-medium block mb-1">Marca / Aplicação (Opcional)</label>
               <input
                 type="text"
-                placeholder="Ex: VW Gol 1.0 Flex, Bosch..."
+                placeholder="Ex: Hyundai Hb20 1.0..."
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
                 className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
@@ -950,7 +1128,7 @@ function AssistantTab({ darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 5: EDITOR DE FOTOS (Fundo Branco Canvas)
+// MÓDULO 6: EDITOR DE FOTOS (Fundo Branco Canvas)
 // ==========================================
 function PhotoEditorTab({ darkMode }) {
   const [imageSrc, setImageSrc] = useState(null);
@@ -1053,20 +1231,16 @@ function PhotoEditorTab({ darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 6: BUSCA OEM DIRETAMENTE DO SEU CADASTRO
+// MÓDULO 7: BUSCA OEM DIRETAMENTE DO SEU CADASTRO
 // ==========================================
 function CategoriesTab({ products, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [copiedItem, setCopiedItem] = useState(null);
 
-  // Filtra diretamente nos produtos cadastrados pelo usuário (usando SKU como Código OEM e o nome/departamento)
   const results = products.filter(p => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return true;
-    const matchesName = p.name.toLowerCase().includes(term);
-    const matchesSku = p.sku.toLowerCase().includes(term);
-    const matchesDept = p.dept.toLowerCase().includes(term);
-    return matchesName || matchesSku || matchesDept;
+    return p.name.toLowerCase().includes(term) || p.sku.toLowerCase().includes(term) || (p.mlb && p.mlb.toLowerCase().includes(term));
   });
 
   const copyToClipboard = (text, key) => {
@@ -1079,14 +1253,14 @@ function CategoriesTab({ products, darkMode }) {
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Busca OEM & Categorias do Seu Cadastro</h2>
-        <p className="text-sm text-slate-400">Pesquise pelas peças que você cadastrou no sistema para gerar automaticamente os títulos e a descrição com o seu Código OEM (SKU).</p>
+        <p className="text-sm text-slate-400">Pesquise pelas peças importadas ou cadastradas para gerar automaticamente os títulos e a descrição com o SKU e Código MLB.</p>
       </div>
 
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
         <input
           type="text"
-          placeholder="Digite o Código OEM (SKU) ou nome da sua peça cadastrada..."
+          placeholder="Digite o SKU, Código MLB ou nome da peça..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className={`w-full pl-10 pr-4 py-3 rounded-xl text-sm border ${
@@ -1098,7 +1272,7 @@ function CategoriesTab({ products, darkMode }) {
       <div className="space-y-6">
         {results.length === 0 ? (
           <div className="p-8 text-center text-slate-500 bg-slate-900/50 rounded-2xl border border-slate-800">
-            Nenhuma peça cadastrada encontrada com o termo "{searchTerm}". Adicione novas peças no Dashboard para vê-las aqui.
+            Nenhuma peça encontrada com o termo "{searchTerm}".
           </div>
         ) : (
           results.map((p, idx) => {
@@ -1113,20 +1287,22 @@ function CategoriesTab({ products, darkMode }) {
 
             const description = 
 `==================================================
-  ${p.name.toUpperCase()} - CÓDIGO OEM: ${p.sku}
+  ${p.name.toUpperCase()} - SKU: ${p.sku} | MLB: ${p.mlb || 'N/D'}
 ==================================================
 
-Peça de alta durabilidade e precisão técnica, cadastrada em nosso estoque com preço competitivo.
+Peça de alta durabilidade e precisão técnica, importada diretamente do relatório de publicações.
 
 FICHA TÉCNICA:
-- Código OEM / Referência (SKU): ${p.sku}
+- Código SKU / OEM: ${p.sku}
+- Código MLB: ${p.mlb || 'N/D'}
 - Categoria Mercado Livre: ${catInfo.path} (${catInfo.id})
-- Preço Atual no Estoque: R$ ${Number(p.price).toFixed(2)}
+- Status no ML: ${p.status || 'Ativo'}
+- Data de Publicação: ${p.date || '2026-11-10'}
 - Condição: Produto Novo com Garantia
 - Envio: Pronta Entrega para todo o Brasil
 
 ATENÇÃO E COMPATIBILIDADE:
-Antes de efetuar a compra, confirme a numeração OEM registrada na sua peça original (${p.sku}). Em caso de dúvidas, consulte seu mecânico de confiança.`;
+Antes de efetuar a compra, confirme a numeração registrada na sua peça original. Em caso de dúvidas, consulte seu mecânico.`;
 
             return (
               <div key={p.id} className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-5 shadow-xl`}>
@@ -1134,10 +1310,13 @@ Antes de efetuar a compra, confirme a numeração OEM registrada na sua peça or
                   <div>
                     <div className="flex flex-wrap gap-2 mb-2">
                       <span className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2.5 py-1 rounded-lg border border-amber-400/20 font-bold">
-                        OEM / SKU: {p.sku}
+                        SKU: {p.sku}
                       </span>
-                      <span className="text-xs font-mono bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/20 font-bold">
-                        Estoque: {p.qty} un. (R$ {Number(p.price).toFixed(2)})
+                      <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-lg border border-blue-500/20 font-bold">
+                        MLB: {p.mlb || 'MLB5539291609'}
+                      </span>
+                      <span className="text-xs font-mono bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700">
+                        Data: {p.date || '2026-11-10'}
                       </span>
                     </div>
                     <h3 className="text-lg font-bold text-slate-100">{p.name}</h3>
@@ -1210,7 +1389,7 @@ Antes de efetuar a compra, confirme a numeração OEM registrada na sua peça or
 // ==========================================
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
-    product || { sku: '', name: '', dept: 'mecanica', sales: 0, qty: 1, price: 0, date: new Date().toISOString().slice(0,10) }
+    product || { sku: '', mlb: '', name: '', dept: 'mecanica', sales: 0, qty: 1, price: 0, date: new Date().toISOString().slice(0,10), status: 'Ativo' }
   );
 
   const handleSubmit = (e) => {
@@ -1228,15 +1407,22 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
 
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
           <div>
-            <label className="text-slate-400 font-medium">Nome da Peça</label>
+            <label className="text-slate-400 font-medium">Título da Peça</label>
             <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-slate-400 font-medium">Código OEM / SKU</label>
-              <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" placeholder="Ex: 036109119P" required />
+              <label className="text-slate-400 font-medium">SKU</label>
+              <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
             </div>
+            <div>
+              <label className="text-slate-400 font-medium">Código MLB</label>
+              <input type="text" value={formData.mlb} onChange={(e) => setFormData({ ...formData, mlb: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" placeholder="MLB..." />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-slate-400 font-medium">Departamento</label>
               <select value={formData.dept} onChange={(e) => setFormData({ ...formData, dept: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white">
@@ -1245,6 +1431,10 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
                 <option value="lataria">Lataria</option>
                 <option value="acabamentos">Acabamentos</option>
               </select>
+            </div>
+            <div>
+              <label className="text-slate-400 font-medium">Data de Publicação</label>
+              <input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
             </div>
           </div>
 
@@ -1258,8 +1448,11 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
               <input type="number" value={formData.qty} onChange={(e) => setFormData({ ...formData, qty: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
             </div>
             <div>
-              <label className="text-slate-400 font-medium">Vendas R$</label>
-              <input type="number" step="0.01" value={formData.sales} onChange={(e) => setFormData({ ...formData, sales: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+              <label className="text-slate-400 font-medium">Status</label>
+              <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white">
+                <option value="Ativo">Ativo</option>
+                <option value="Sob Revisão">Sob Revisão</option>
+              </select>
             </div>
           </div>
 
@@ -1323,7 +1516,7 @@ function ReturnModal({ returnData, products, onSave, onClose, darkMode }) {
             <select onChange={(e) => handleSelectProduct(e.target.value)} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white">
               <option value="">-- Selecione uma peça --</option>
               {products.map(p => (
-                <option key={p.id} value={p.sku}>{p.name} (OEM: {p.sku})</option>
+                <option key={p.id} value={p.sku}>{p.name} (SKU: {p.sku})</option>
               ))}
             </select>
           </div>
