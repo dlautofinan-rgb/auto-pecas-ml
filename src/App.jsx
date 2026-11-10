@@ -67,14 +67,46 @@ const DEFAULT_RETURNS = [
   { id: 'r3', date: '2026-11-08', sku: 'MANOPLA-CAMB-02', name: 'Manopla Câmbio Esportiva', dept: 'acabamentos', qty: 1, amount: 67.50, reason: 'Atraso na Entrega', status: 'Pendente', notes: 'Atraso na transportadora.' }
 ];
 
-const DEFAULT_CATEGORIES = [
-  { id: 'MLB26330', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor > Correias', path: 'Mecânica > Motor', oem: '036109119P, CT881, 5507XS' },
-  { id: 'MLB193498', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Ignição > Bobinas', path: 'Elétrica > Ignição', oem: '032905106B, BI0017MM, CE20118' },
-  { id: 'MLB412351', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Lataria > Capôs', path: 'Lataria > Lataria Exterior', oem: '5U0823031, 5W0823031A' },
-  { id: 'MLB181157', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Habitáculo > Tapetes', path: 'Acabamentos > Interior', oem: '5U0061500, 377061500' }
+// --- BASE DE DADOS INTELIGENTE DE OEM E CATEGORIAS ---
+const OEM_DATABASE = [
+  {
+    id: 'MLB26330',
+    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor > Correias',
+    name: 'Kit Correia Dentada e Tensionadores',
+    oems: ['036109119P', 'CT881', '5507XS', 'K015409XS', 'KTB329']
+  },
+  {
+    id: 'MLB193498',
+    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Ignição > Bobinas',
+    name: 'Bobina de Ignição Flex / Gasolina',
+    oems: ['032905106B', 'BI0017MM', 'CE20118', 'F000ZS0222', '9220081031']
+  },
+  {
+    id: 'MLB412351',
+    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Lataria > Capôs',
+    name: 'Capô Dianteiro / Primer',
+    oems: ['5U0823031', '5W0823031A', '377823151', '5Z0823031']
+  },
+  {
+    id: 'MLB181157',
+    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Habitáculo > Tapetes',
+    name: 'Jogo de Tapetes em Borracha',
+    oems: ['5U0061500', '377061500', 'TP001', 'TAP-01']
+  },
+  {
+    id: 'MLB16428',
+    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios > Pastilhas de Freio',
+    name: 'Jogo de Pastilhas de Freio Dianteiro',
+    oems: ['N159', 'ECO1012', 'PWR512', 'HQJ2221']
+  },
+  {
+    id: 'MLB26412',
+    path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor > Bombas d\'Água',
+    name: 'Bomba d\'Água Motor EA111 / AP',
+    oems: ['UB011', 'VKPC86412', 'BA111', '030121008']
+  }
 ];
 
-// --- COMPONENTE DE NAVEGAÇÃO REUTILIZÁVEL ---
 function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
   const isActive = active === id;
   return (
@@ -105,13 +137,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(true);
 
-  // Estado de Autenticação
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('ml_user');
     return saved ? JSON.parse(saved) : null;
   });
 
-  // Estados com persistência local
   const [products, setProducts] = useState(() => {
     const saved = localStorage.getItem('ml_products');
     return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
@@ -138,23 +168,19 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Modais de Edição/Criação
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [editingReturn, setEditingReturn] = useState(null);
 
-  // Filtros Globais / Dashboard
   const [periodFilter, setPeriodFilter] = useState('30');
   const [comparePeriod, setComparePeriod] = useState(false);
 
-  // Logout
   const handleLogout = () => {
     setCurrentUser(null);
   };
 
-  // --- HANDLERS PRODUTOS ---
   const handleSaveProduct = (productData) => {
     if (productData.id) {
       setProducts(products.map(p => p.id === productData.id ? productData : p));
@@ -176,7 +202,6 @@ export default function App() {
     }
   };
 
-  // --- HANDLERS DEVOLUÇÕES ---
   const handleSaveReturn = (returnData) => {
     if (returnData.id) {
       setReturnsList(returnsList.map(r => r.id === returnData.id ? returnData : r));
@@ -198,7 +223,6 @@ export default function App() {
     }
   };
 
-  // Exportar Devoluções em CSV
   const exportReturnsCSV = () => {
     const headers = ['ID', 'Data', 'SKU', 'Peça', 'Departamento', 'Qtd', 'Valor (R$)', 'Motivo', 'Status', 'Observações'];
     const rows = returnsList.map(r => [
@@ -214,7 +238,6 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  // Restaurar Dados Originais
   const resetToDefaultData = () => {
     if (window.confirm('Deseja restaurar os dados de exemplo originais? Suas alterações salvas localmente serão substituídas.')) {
       setProducts(DEFAULT_PRODUCTS);
@@ -224,18 +247,14 @@ export default function App() {
     }
   };
 
-  // SE NÃO ESTIVER LOGADO -> EXIBIR TELA DE LOGIN
   if (!currentUser) {
     return <LoginScreen onLogin={(user) => setCurrentUser(user)} darkMode={darkMode} setDarkMode={setDarkMode} />;
   }
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'} font-sans flex flex-col md:flex-row transition-colors duration-200`}>
-      
-      {/* BARRA LATERAL / NAVEGAÇÃO */}
       <aside className={`w-full md:w-64 border-b md:border-b-0 md:border-r ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex-shrink-0 flex flex-col justify-between`}>
         <div>
-          {/* LOGO E USUÁRIO LOGADO */}
           <div className="p-5 border-b border-slate-800/50 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -255,7 +274,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* BADGE DE USUÁRIO */}
             <div className="flex items-center justify-between bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60 text-xs">
               <div className="flex items-center gap-2">
                 {currentUser.role === 'admin' ? (
@@ -279,18 +297,16 @@ export default function App() {
             </div>
           </div>
 
-          {/* MENU NAVEGAÇÃO */}
           <nav className="p-3 space-y-1">
             <NavItem id="dashboard" label="Dashboard & Departamentos" icon={BarChart3} active={activeTab} setActive={setActiveTab} />
             <NavItem id="returns" label="Controle Devoluções" icon={RotateCcw} active={activeTab} setActive={setActiveTab} badge={returnsList.length} />
             <NavItem id="pricing" label="Pesquisa de Preços" icon={Search} active={activeTab} setActive={setActiveTab} />
             <NavItem id="assistant" label="Assistente Títulos/IA" icon={Sparkles} active={activeTab} setActive={setActiveTab} />
             <NavItem id="photo" label="Editor Fundo Branco" icon={ImageIcon} active={activeTab} setActive={setActiveTab} />
-            <NavItem id="categories" label="Auxiliar Categorias" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="categories" label="Busca OEM & Categoria ML" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
           </nav>
         </div>
 
-        {/* RODAPÉ DA SIDEBAR */}
         <div className="p-4 border-t border-slate-800/50 hidden md:block">
           <div className="flex items-center justify-between">
             <button 
@@ -312,7 +328,6 @@ export default function App() {
         </div>
       </aside>
 
-      {/* ÁREA DE CONTEÚDO PRINCIPAL */}
       <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
         {activeTab === 'dashboard' && (
           <DashboardTab 
@@ -348,10 +363,9 @@ export default function App() {
 
         {activeTab === 'photo' && <PhotoEditorTab darkMode={darkMode} />}
 
-        {activeTab === 'categories' && <CategoriesTab categories={DEFAULT_CATEGORIES} darkMode={darkMode} />}
+        {activeTab === 'categories' && <CategoriesTab darkMode={darkMode} />}
       </main>
 
-      {/* MODAIS */}
       {isProductModalOpen && (
         <ProductModal 
           product={editingProduct} 
@@ -838,7 +852,7 @@ function PricingTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 4: ASSISTENTE DE TÍTULOS E IA (FUNCIONAL COM OEM)
+// MÓDULO 4: ASSISTENTE DE TÍTULOS E IA
 // ==========================================
 function AssistantTab({ darkMode }) {
   const [oemCode, setOemCode] = useState('');
@@ -880,7 +894,6 @@ function AssistantTab({ darkMode }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* FORMULÁRIO DE ENTRADA */}
         <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4`}>
           <h3 className="font-bold text-slate-200 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-amber-400" />
@@ -931,7 +944,6 @@ function AssistantTab({ darkMode }) {
           </form>
         </div>
 
-        {/* ÁREA DE RESULTADOS */}
         <div className={`lg:col-span-2 p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4`}>
           <h3 className="font-bold text-slate-200 flex items-center justify-between">
             <span>Sugestões de Títulos (Max 60 caracteres)</span>
@@ -1073,70 +1085,150 @@ function PhotoEditorTab({ darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 6: AUXILIAR DE CATEGORIAS (BUSCA COM OEM)
+// MÓDULO 6: BUSCA INTELIGENTE DE OEM E CATEGORIAS
 // ==========================================
-function CategoriesTab({ categories, darkMode }) {
+function CategoriesTab({ darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [copiedItem, setCopiedItem] = useState(null);
 
-  const filteredCategories = categories.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.path.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (c.oem && c.oem.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Filtra na base interna inteligente por OEM ou Nome
+  const results = OEM_DATABASE.filter(item => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+    const matchesName = item.name.toLowerCase().includes(term);
+    const matchesPath = item.path.toLowerCase().includes(term);
+    const matchesOem = item.oems.some(oem => oem.toLowerCase().includes(term));
+    return matchesName || matchesPath || matchesOem;
+  });
+
+  const copyToClipboard = (text, key) => {
+    navigator.clipboard.writeText(text);
+    setCopiedItem(key);
+    setTimeout(() => setCopiedItem(null), 2000);
+  };
 
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Auxiliar de Categorias Mercado Livre</h2>
-        <p className="text-sm text-slate-400">Consulte os códigos de categoria oficiais por nome ou código OEM.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Busca Inteligente de OEM & Categorias ML</h2>
+        <p className="text-sm text-slate-400">Digite o código OEM ou nome da peça para carregar instantaneamente a categoria, títulos otimizados e descrição técnica.</p>
       </div>
 
-      {/* BARRA DE BUSCA (NOME OU OEM) */}
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
         <input
           type="text"
-          placeholder="Digite o nome da peça ou Código OEM (ex: 032905106B, CT881, Bobina)..."
+          placeholder="Digite o Código OEM ou Peça (ex: 032905106B, CT881, Bobina, Capô)..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm border ${
+          className={`w-full pl-10 pr-4 py-3 rounded-xl text-sm border ${
             darkMode ? 'bg-slate-900 border-slate-800 text-white placeholder-slate-500' : 'bg-white border-slate-300'
-          } focus:outline-none focus:border-blue-500`}
+          } focus:outline-none focus:border-amber-400`}
         />
       </div>
 
-      {/* LISTA DE SUGESTÕES DE CATEGORIAS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredCategories.length === 0 ? (
-          <div className="col-span-2 p-8 text-center text-slate-500 bg-slate-900/50 rounded-2xl border border-slate-800">
-            Nenhuma categoria encontrada para o termo ou Código OEM informado.
+      <div className="space-y-6">
+        {results.length === 0 ? (
+          <div className="p-8 text-center text-slate-500 bg-slate-900/50 rounded-2xl border border-slate-800">
+            Nenhum resultado encontrado para "{searchTerm}". Tente outro código OEM ou termo.
           </div>
         ) : (
-          filteredCategories.map((cat) => (
-            <div key={cat.id} className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2`}>
-              <div className="flex justify-between items-start">
-                <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-semibold">
-                  {cat.id}
-                </span>
-                <button 
-                  onClick={() => navigator.clipboard.writeText(cat.id)}
-                  className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  <span>Copiar Código</span>
-                </button>
-              </div>
-              <h4 className="font-semibold text-sm text-slate-200">{cat.path}</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">{cat.name}</p>
-              
-              {cat.oem && (
-                <div className="pt-2 border-t border-slate-800/60 text-[11px] text-slate-400 font-mono">
-                  <span className="text-amber-400 font-semibold">OEMs compatíveis:</span> {cat.oem}
+          results.map((item, idx) => {
+            const cleanQuery = searchTerm.trim() ? searchTerm.trim().toUpperCase() : item.oems[0];
+            
+            const titles = [
+              `${item.name} OEM ${cleanQuery}`.trim(),
+              `Kit ${item.name} Original OEM ${cleanQuery}`.trim(),
+              `${item.name} Alta Qualidade OEM ${cleanQuery}`.trim(),
+              `Par ${item.name} Compatível OEM ${cleanQuery}`.trim()
+            ].map(t => t.length > 60 ? t.slice(0, 57) + '...' : t);
+
+            const description = 
+`==================================================
+  ${item.name.toUpperCase()} - CÓDIGO OEM: ${cleanQuery}
+==================================================
+
+Peça de alta durabilidade e precisão técnica, projetada para substituição direta com encaixe perfeito.
+
+FICHA TÉCNICA:
+- Código OEM / Referência: ${cleanQuery}
+- Categoria Mercado Livre: ${item.path} (${item.id})
+- Condição: Produto Novo com Garantia
+- Envio: Pronta Entrega para todo o Brasil
+
+ATENÇÃO E COMPATIBILIDADE:
+Antes de efetuar a compra, confirme a numeração OEM registrada na sua peça original (${cleanQuery}). Em caso de dúvidas, consulte seu mecânico de confiança.`;
+
+            return (
+              <div key={item.id} className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-5 shadow-xl`}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-4 border-b border-slate-800">
+                  <div>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {item.oems.map((oemCode, oIdx) => (
+                        <span key={oIdx} className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2.5 py-0.5 rounded-lg border border-amber-400/20 font-bold">
+                          OEM: {oemCode}
+                        </span>
+                      ))}
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-100">{item.name}</h3>
+                    <p className="text-xs text-slate-400">{item.path}</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-3 py-1 rounded-xl border border-blue-500/20 font-bold">
+                      ID ML: {item.id}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(item.id, `id_${idx}`)}
+                      className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs flex items-center gap-1 transition-colors"
+                    >
+                      {copiedItem === `id_${idx}` ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      <span>{copiedItem === `id_${idx}` ? 'Copiado!' : 'Copiar ID'}</span>
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
-          ))
+
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>Títulos Sugeridos (Máximo 60 Caracteres)</span>
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {titles.map((title, tIdx) => (
+                      <div key={tIdx} className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/60 flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-semibold text-slate-200">{title}</p>
+                          <span className="text-[10px] text-slate-400 font-mono">{title.length}/60 carac.</span>
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(title, `t_${idx}_${tIdx}`)}
+                          className="p-1.5 bg-slate-700 hover:bg-amber-400 hover:text-slate-950 text-slate-300 rounded-lg text-xs font-bold transition-colors"
+                        >
+                          {copiedItem === `t_${idx}_${tIdx}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Descrição Técnica Pronta para Anúncio</h4>
+                    <button
+                      onClick={() => copyToClipboard(description, `desc_${idx}`)}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                    >
+                      {copiedItem === `desc_${idx}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedItem === `desc_${idx}` ? 'Descrição Copiada!' : 'Copiar Descrição'}</span>
+                    </button>
+                  </div>
+                  <pre className="p-4 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 whitespace-pre-wrap leading-relaxed">
+                    {description}
+                  </pre>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
     </div>
