@@ -29,16 +29,35 @@ import {
   Shield,
   Briefcase,
   Calendar,
-  Layers as LayersIcon
+  DollarSign,
+  ShoppingBag,
+  Percent,
+  Cloud,
+  CloudCheck
 } from 'lucide-react';
+
+// --- CONFIGURAÇÃO FIREBASE ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBDKksCn466pxCm0kbRYN5Ia2HqVbQkUMM",
+  authDomain: "mercadolivredl-dba3b.firebaseapp.com",
+  databaseURL: "https://mercadolivredl-dba3b-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "mercadolivredl-dba3b",
+  storageBucket: "mercadolivredl-dba3b.firebasestorage.app",
+  messagingSenderId: "472505973455",
+  appId: "1:472505973455:web:3b033245b88c8c1f02d5ba"
+};
 
 // --- DADOS INICIAIS DE EXEMPLO ---
 const DEFAULT_PRODUCTS = [
-  { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v 3cc 2015', dept: 'mecanica', status: 'Ativo', date: '2026-11-10', conta: 'DL Auto Peças' },
-  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0 Comfort 12v 2015', dept: 'mecanica', status: 'Sob Revisão', date: '2026-11-10', conta: 'DL Auto Peças' },
-  { id: 'p3', sku: '12529', mlb: 'MLB5539289953', name: 'Trava Elétrica Tampa Traseira Hyundai Hb20 1.0 Comfort 12v 2015', dept: 'eletrica', status: 'Ativo', date: '2026-11-10', conta: 'DL Auto Peças' },
-  { id: 'p4', sku: '12528', mlb: 'MLB7971719130', name: 'Flauta C/ Bicos Injetores Hyundai Hb20 1.0 Comfort 12v 3cc 2015', dept: 'mecanica', status: 'Ativo', date: '2026-11-09', conta: 'DL Auto Peças' },
-  { id: 'p5', sku: '12527', mlb: 'MLB7971562040', name: 'Break Light Luz De Freio Nissan Versa 265903aa0a Cinza', dept: 'lataria', status: 'Sob Revisão', date: '2026-11-09', conta: 'DL Auto Peças' }
+  { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v', dept: 'mecanica', status: 'Ativo', date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0', dept: 'mecanica', status: 'Sob Revisão', date: '2026-11-10', conta: 'DL Auto Peças' }
+];
+
+const DEFAULT_SALES = [
+  { id: 's1', saleId: '3506074', client: 'Italo Ferreira Matos', value: 248.17, discount: 50.83, date: '2026-11-09', payment: 'Transferência Bancária', nfe: '10733' },
+  { id: 's2', saleId: '3499524', client: 'Bruno Joseph de Souza', value: 124.50, discount: 25.50, date: '2026-11-07', payment: 'Cartão de Crédito', nfe: '10725' },
+  { id: 's3', saleId: '3469023', client: 'Vanderson Jacinto Lessa', value: 835.00, discount: 165.00, date: '2026-11-02', payment: 'Cartão de Crédito', nfe: '10626' },
+  { id: 's4', saleId: '3465843', client: 'Wander Lucio Do Carmo', value: 83.00, discount: 17.00, date: '2026-11-01', payment: 'Cartão de Crédito', nfe: '10665' }
 ];
 
 const DEFAULT_RETURNS = [
@@ -79,8 +98,9 @@ function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('import');
+  const [activeTab, setActiveTab] = useState('sales-dashboard');
   const [darkMode, setDarkMode] = useState(true);
+  const [firebaseConnected, setFirebaseConnected] = useState(false);
 
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('ml_user');
@@ -92,18 +112,82 @@ export default function App() {
     return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
   });
 
+  const [salesList, setSalesList] = useState(() => {
+    const saved = localStorage.getItem('ml_sales');
+    return saved ? JSON.parse(saved) : DEFAULT_SALES;
+  });
+
   const [returnsList, setReturnsList] = useState(() => {
     const saved = localStorage.getItem('ml_returns');
     return saved ? JSON.parse(saved) : DEFAULT_RETURNS;
   });
 
+  // Inicialização e Sincronização com Firebase Realtime Database
+  useEffect(() => {
+    const initFirebase = async () => {
+      try {
+        if (!window.firebase) {
+          // Carregar scripts do Firebase SDK v8 via CDN
+          await loadScript('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
+          await loadScript('https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js');
+        }
+
+        if (window.firebase && !window.firebase.apps.length) {
+          window.firebase.initializeApp(firebaseConfig);
+        }
+
+        if (window.firebase) {
+          const dbRef = window.firebase.database().ref('mercadolivredl');
+          
+          // Ler dados salvos no Firebase
+          dbRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+              if (data.products) setProducts(data.products);
+              if (data.salesList) setSalesList(data.salesList);
+              if (data.returnsList) setReturnsList(data.returnsList);
+              setFirebaseConnected(true);
+            } else {
+              // Se estiver vazio no Firebase, salvar o estado atual
+              dbRef.set({ products, salesList, returnsList });
+              setFirebaseConnected(true);
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Erro ao conectar ao Firebase:', err);
+        setFirebaseConnected(false);
+      }
+    };
+
+    initFirebase();
+  }, []);
+
+  const loadScript = (src) => {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  };
+
+  // Salvar no Firebase sempre que houver alteração
   useEffect(() => {
     localStorage.setItem('ml_products', JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
+    localStorage.setItem('ml_sales', JSON.stringify(salesList));
     localStorage.setItem('ml_returns', JSON.stringify(returnsList));
-  }, [returnsList]);
+
+    if (window.firebase && window.firebase.apps.length) {
+      const dbRef = window.firebase.database().ref('mercadolivredl');
+      dbRef.set({ products, salesList, returnsList }).catch(err => console.error(err));
+    }
+  }, [products, salesList, returnsList]);
 
   useEffect(() => {
     if (currentUser) {
@@ -154,9 +238,9 @@ export default function App() {
   const resetToDefaultData = () => {
     if (window.confirm('Deseja restaurar os dados padrão?')) {
       setProducts(DEFAULT_PRODUCTS);
+      setSalesList(DEFAULT_SALES);
       setReturnsList(DEFAULT_RETURNS);
-      localStorage.removeItem('ml_products');
-      localStorage.removeItem('ml_returns');
+      localStorage.clear();
     }
   };
 
@@ -176,7 +260,10 @@ export default function App() {
                 </div>
                 <div>
                   <h1 className="font-bold text-lg leading-tight tracking-tight text-amber-400">AutoPeças <span className="text-blue-400">ML</span></h1>
-                  <p className="text-xs text-slate-400">Gestão de Anúncios</p>
+                  <p className="text-xs text-slate-400 flex items-center gap-1">
+                    <span className={`w-2 h-2 rounded-full ${firebaseConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                    {firebaseConnected ? 'Firebase Conectado' : 'Modo Local'}
+                  </p>
                 </div>
               </div>
               <button 
@@ -211,9 +298,10 @@ export default function App() {
           </div>
 
           <nav className="p-3 space-y-1">
-            <NavItem id="import" label="Importar Planilha & Datas" icon={FileSpreadsheet} active={activeTab} setActive={setActiveTab} badge={products.length} />
+            <NavItem id="sales-dashboard" label="Dashboard Faturamento & Vendas" icon={BarChart3} active={activeTab} setActive={setActiveTab} badge={salesList.length} />
+            <NavItem id="import" label="Importar Peças & Anúncios" icon={FileSpreadsheet} active={activeTab} setActive={setActiveTab} badge={products.length} />
             <NavItem id="manage-sheets" label="Gerenciar / Excluir Planilhas" icon={Trash2} active={activeTab} setActive={setActiveTab} />
-            <NavItem id="assistant" label="Editor de Títulos (IA)" icon={Sparkles} active={activeTab} setActive={setActiveTab} badge={products.filter(p => p.name.length > 55).length} />
+            <NavItem id="assistant" label="Editor de Títulos (IA)" icon={Sparkles} active={activeTab} setActive={setActiveTab} />
             <NavItem id="categories" label="Editor de Categorias & OEM" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
             <NavItem id="returns" label="Controle Devoluções" icon={RotateCcw} active={activeTab} setActive={setActiveTab} />
             <NavItem id="photo" label="Editor Fundo Branco" icon={ImageIcon} active={activeTab} setActive={setActiveTab} />
@@ -242,6 +330,15 @@ export default function App() {
       </aside>
 
       <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+        {activeTab === 'sales-dashboard' && (
+          <SalesDashboardTab 
+            salesList={salesList} 
+            setSalesList={setSalesList} 
+            currentUser={currentUser} 
+            darkMode={darkMode} 
+          />
+        )}
+
         {activeTab === 'import' && (
           <ImportExcelTab 
             products={products} 
@@ -311,7 +408,7 @@ function LoginScreen({ onLogin, darkMode, setDarkMode }) {
             <Car className="w-10 h-10" />
           </div>
           <h1 className="text-3xl font-black tracking-tight">AutoPeças <span className="text-blue-500">ML Suite</span></h1>
-          <p className="text-sm text-slate-400">Controle de Anúncios e Otimização Diária</p>
+          <p className="text-sm text-slate-400">Controle de Faturamento e Vendas (Firebase)</p>
         </div>
 
         <div className={`p-6 md:p-8 rounded-3xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-2xl space-y-6`}>
@@ -369,7 +466,241 @@ function LoginScreen({ onLogin, darkMode, setDarkMode }) {
 }
 
 // ==========================================
-// MÓDULO 1: IMPORTADOR EXCEL & FILTRAGEM POR DATA
+// MÓDULO: DASHBOARD DE FATURAMENTO & VENDAS
+// ==========================================
+function SalesDashboardTab({ salesList, setSalesList, currentUser, darkMode }) {
+  const [filterDate, setFilterDate] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [importStatus, setImportStatus] = useState('');
+
+  const handleSalesFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!window.XLSX) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      script.onload = () => processSalesExcel(file);
+      document.head.appendChild(script);
+    } else {
+      processSalesExcel(file);
+    }
+  };
+
+  const processSalesExcel = (file) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const workbook = window.XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonRows = window.XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonRows.length === 0) {
+          setImportStatus('A planilha de vendas está vazia.');
+          return;
+        }
+
+        const importedSales = jsonRows.map((row, idx) => {
+          const saleId = String(row['Id'] || row['ID'] || `ID_${idx}`);
+          const client = String(row['Cliente'] || 'Cliente Balcão');
+          const value = Number(row['Valor de Venda'] || row['Valor'] || 0);
+          const discount = Number(row['Desconto'] || 0);
+          const payment = String(row['Pagamentos'] || 'Dinheiro');
+          const nfe = String(row['Nº NFe'] || row['NFe'] || '-');
+
+          let rawDate = row['Data'] || new Date().toISOString();
+          let formattedDate = new Date().toISOString().slice(0, 10);
+          try {
+            if (typeof rawDate === 'number') {
+              const d = new Date((rawDate - (25567 + 2)) * 86400 * 1000);
+              formattedDate = d.toISOString().slice(0, 10);
+            } else if (rawDate) {
+              formattedDate = String(rawDate).slice(0, 10);
+            }
+          } catch (err) {
+            formattedDate = new Date().toISOString().slice(0, 10);
+          }
+
+          return {
+            id: 'sale_' + Date.now() + '_' + idx,
+            saleId,
+            client,
+            value,
+            discount,
+            date: formattedDate,
+            payment,
+            nfe
+          };
+        });
+
+        setSalesList([...importedSales, ...salesList]);
+        setImportStatus(`Sucesso! ${importedSales.length} vendas importadas e salvas no Firebase.`);
+      } catch (err) {
+        console.error(err);
+        setImportStatus('Erro ao ler a planilha de vendas.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const filteredSales = salesList.filter(s => {
+    const matchSearch = s.client.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          s.saleId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          s.nfe.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchDate = !filterDate || (s.date && s.date.startsWith(filterDate));
+    return matchSearch && matchDate;
+  });
+
+  const totalRevenue = filteredSales.reduce((acc, s) => acc + s.value, 0);
+  const totalDiscount = filteredSales.reduce((acc, s) => acc + s.discount, 0);
+  const totalCount = filteredSales.length;
+  const averageTicket = totalCount > 0 ? (totalRevenue / totalCount) : 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Dashboard de Faturamento & Vendas</h2>
+          <p className="text-sm text-slate-400">Importe sua planilha de vendas para calcular métricas por datas e salvar na nuvem.</p>
+        </div>
+
+        <label className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer shadow-lg shadow-amber-400/20 transition-transform active:scale-95">
+          <Upload className="w-4 h-4" />
+          <span>Importar Planilha de Vendas (.xlsx)</span>
+          <input type="file" accept=".xlsx, .xls, .csv" onChange={handleSalesFileUpload} className="hidden" />
+        </label>
+      </div>
+
+      {importStatus && (
+        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+          <span>{importStatus}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg`}>
+          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>Faturamento Total</span>
+            <DollarSign className="w-4 h-4 text-amber-400" />
+          </div>
+          <div className="text-2xl font-black font-mono text-amber-400">
+            R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] text-slate-500">Valor líquido de vendas</div>
+        </div>
+
+        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg`}>
+          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>Total de Vendas</span>
+            <ShoppingBag className="w-4 h-4 text-blue-400" />
+          </div>
+          <div className="text-2xl font-black font-mono text-blue-400">
+            {totalCount} <span className="text-xs font-normal text-slate-400">pedidos</span>
+          </div>
+          <div className="text-[10px] text-slate-500">Transações realizadas</div>
+        </div>
+
+        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg`}>
+          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>Ticket Médio</span>
+            <BarChart3 className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div className="text-2xl font-black font-mono text-emerald-400">
+            R$ {averageTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] text-slate-500">Média por pedido</div>
+        </div>
+
+        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg`}>
+          <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>Total de Descontos</span>
+            <Percent className="w-4 h-4 text-red-400" />
+          </div>
+          <div className="text-2xl font-black font-mono text-red-400">
+            R$ {totalDiscount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </div>
+          <div className="text-[10px] text-slate-500">Descontos concedidos</div>
+        </div>
+      </div>
+
+      <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} grid grid-cols-1 md:grid-cols-3 gap-4`}>
+        <div className="relative md:col-span-2">
+          <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Pesquisar por Cliente, ID da Venda ou NFe..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
+          />
+        </div>
+
+        <div className="relative">
+          <Calendar className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-amber-400"
+          />
+        </div>
+      </div>
+
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <div className="p-4 border-b border-slate-800 flex justify-between items-center text-xs font-semibold text-slate-400">
+          <span>Transações Listadas ({filteredSales.length})</span>
+          {filterDate && (
+            <button onClick={() => setFilterDate('')} className="text-blue-400 hover:underline">
+              Limpar Filtro da Data ({filterDate})
+            </button>
+          )}
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
+              <tr>
+                <th className="p-4">ID Venda / NFe</th>
+                <th className="p-4">Cliente</th>
+                <th className="p-4">Forma Pagamento</th>
+                <th className="p-4">Data</th>
+                <th className="p-4 text-right">Desconto</th>
+                <th className="p-4 text-right">Valor da Venda</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50">
+              {filteredSales.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-slate-500">Nenhuma venda encontrada.</td>
+                </tr>
+              ) : (
+                filteredSales.map((s) => (
+                  <tr key={s.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="p-4 font-mono text-xs">
+                      <div className="font-bold text-amber-400">ID: {s.saleId}</div>
+                      <div className="text-slate-500">NFe: {s.nfe}</div>
+                    </td>
+                    <td className="p-4 font-semibold text-slate-200">{s.client}</td>
+                    <td className="p-4 text-xs text-slate-300">{s.payment}</td>
+                    <td className="p-4 font-mono text-xs text-slate-400">{s.date}</td>
+                    <td className="p-4 text-right font-mono text-red-400 text-xs">R$ {s.discount.toFixed(2)}</td>
+                    <td className="p-4 text-right font-mono font-bold text-amber-400">R$ {s.value.toFixed(2)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// MÓDULO: IMPORTADOR DE PEÇAS & ANÚNCIOS
 // ==========================================
 function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEditProduct, onDeleteProduct, darkMode }) {
   const [filterDate, setFilterDate] = useState('');
@@ -438,7 +769,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
         });
 
         setProducts([...imported, ...products]);
-        setImportStatus(`Sucesso! ${imported.length} peças importadas da planilha "${file.name}" e já enviadas para os editores.`);
+        setImportStatus(`Sucesso! ${imported.length} peças importadas e salvas no Firebase.`);
       } catch (err) {
         console.error(err);
         setImportStatus('Erro ao ler a planilha Excel.');
@@ -459,8 +790,8 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Importação de Planilha Diária (.xlsx)</h2>
-          <p className="text-sm text-slate-400">Puxe todas as peças do seu relatório do Mercado Livre, filtre por data e envie direto para os editores.</p>
+          <h2 className="text-2xl font-bold tracking-tight">Importar Peças & Anúncios</h2>
+          <p className="text-sm text-slate-400">Puxe o catálogo de publicações sincronizado na nuvem.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -484,7 +815,6 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
         </div>
       )}
 
-      {/* FILTROS */}
       <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} grid grid-cols-1 md:grid-cols-3 gap-4`}>
         <div className="relative md:col-span-2">
           <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500" />
@@ -508,7 +838,6 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
         </div>
       </div>
 
-      {/* TABELA DE ANÚNCIOS CADASTRADOS */}
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
         <div className="p-4 border-b border-slate-800 flex justify-between items-center text-xs font-semibold text-slate-400">
           <span>Total de Anúncios Exibidos: <strong className="text-amber-400 font-mono text-sm">{filteredProducts.length}</strong></span>
@@ -534,7 +863,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
             <tbody className="divide-y divide-slate-800/50">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="p-8 text-center text-slate-500">Nenhum anúncio encontrado para esta data ou filtro.</td>
+                  <td colSpan="6" className="p-8 text-center text-slate-500">Nenhum anúncio encontrado.</td>
                 </tr>
               ) : (
                 filteredProducts.map((p) => (
@@ -577,10 +906,9 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
 }
 
 // ==========================================
-// NOVO MÓDULO: GERENCIAR / EXCLUIR PLANILHAS LANÇADAS
+// MÓDULO: GERENCIAR / EXCLUIR PLANILHAS LANÇADAS
 // ==========================================
 function ManageSheetsTab({ products, onDeleteSheet, currentUser, darkMode }) {
-  // Agrupa os produtos por data de publicação (cada data representa uma planilha/lote lançado)
   const sheetsMap = {};
   products.forEach(p => {
     const d = p.date || '2026-11-10';
@@ -597,7 +925,7 @@ function ManageSheetsTab({ products, onDeleteSheet, currentUser, darkMode }) {
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Gerenciar e Excluir Planilhas Lançadas</h2>
-        <p className="text-sm text-slate-400">Visualize todas as planilhas importadas por dia e exclua lotes inteiros se necessário.</p>
+        <p className="text-sm text-slate-400">Exclua lotes inteiros da nuvem do Firebase.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -616,11 +944,11 @@ function ManageSheetsTab({ products, onDeleteSheet, currentUser, darkMode }) {
                     {sheet.count} {sheet.count === 1 ? 'peça' : 'peças'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400">Lote de publicações importado para esta data.</p>
+                <p className="text-xs text-slate-400">Lote sincronizado com o Firebase.</p>
               </div>
 
               <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
-                <span className="text-[10px] text-slate-500 font-mono">Status: Ativo no Sistema</span>
+                <span className="text-[10px] text-slate-500 font-mono">Status: Sincronizado</span>
                 {currentUser?.role === 'admin' ? (
                   <button
                     onClick={() => onDeleteSheet(sheet.date)}
@@ -642,7 +970,7 @@ function ManageSheetsTab({ products, onDeleteSheet, currentUser, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 3: EDITOR DE TÍTULOS (IA) AUTOMÁTICO
+// MÓDULO: EDITOR DE TÍTULOS (IA)
 // ==========================================
 function AssistantTab({ products, darkMode }) {
   const [copiedIndex, setCopiedIndex] = useState(null);
@@ -656,8 +984,8 @@ function AssistantTab({ products, darkMode }) {
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Editor de Títulos (Automático das Peças)</h2>
-        <p className="text-sm text-slate-400">Todas as peças importadas da planilha já aparecem aqui para você verificar se há títulos longos ou que precisam de melhoria.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Editor de Títulos (Automático)</h2>
+        <p className="text-sm text-slate-400">Verifique os títulos importados do Firebase.</p>
       </div>
 
       <div className="space-y-4">
@@ -667,38 +995,26 @@ function AssistantTab({ products, darkMode }) {
 
           return (
             <div key={p.id || idx} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-3 shadow-lg`}>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2.5 py-1 rounded-lg border border-amber-400/20 font-bold">
-                    SKU: {p.sku}
-                  </span>
-                  <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-lg border border-blue-500/20 font-bold">
-                    MLB: {p.mlb || 'N/D'}
-                  </span>
-                </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${isLong ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
-                  {isLong ? `Título Longo (${p.name.length} carac.) - Precisa Melhorar` : `Ideal (${p.name.length}/60 carac.)`}
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2.5 py-1 rounded font-bold">SKU: {p.sku}</span>
+                <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${isLong ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                  {isLong ? 'Precisa Melhorar (>60 carac.)' : 'Ideal'}
                 </span>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="p-3 bg-slate-800/40 rounded-xl border border-slate-800 space-y-1">
-                  <span className="text-slate-400 font-semibold block">Título Atual na Planilha:</span>
+                <div className="p-3 bg-slate-800/40 rounded-xl border border-slate-800">
+                  <span className="text-slate-400 font-semibold block">Título Atual:</span>
                   <p className="text-slate-200 font-medium">{p.name}</p>
                 </div>
-
-                <div className="p-3 bg-blue-600/10 rounded-xl border border-blue-500/30 space-y-1 flex flex-col justify-between">
+                <div className="p-3 bg-blue-600/10 rounded-xl border border-blue-500/30 flex flex-col justify-between">
                   <div>
-                    <span className="text-blue-400 font-semibold block">Sugestão Otimizada (Max 60 carac.):</span>
+                    <span className="text-blue-400 font-semibold block">Sugestão (Max 60 carac.):</span>
                     <p className="text-slate-100 font-bold">{optimized}</p>
                   </div>
                   <div className="flex justify-end pt-2">
-                    <button
-                      onClick={() => handleCopy(optimized, idx)}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
-                    >
+                    <button onClick={() => handleCopy(optimized, idx)} className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-1">
                       {copiedIndex === idx ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedIndex === idx ? 'Copiado!' : 'Copiar Sugestão'}</span>
+                      <span>{copiedIndex === idx ? 'Copiado!' : 'Copiar'}</span>
                     </button>
                   </div>
                 </div>
@@ -712,7 +1028,7 @@ function AssistantTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 4: EDITOR DE CATEGORIAS & OEM AUTOMÁTICO
+// MÓDULO: EDITOR DE CATEGORIAS & OEM
 // ==========================================
 function CategoriesTab({ products, darkMode }) {
   const [copiedItem, setCopiedItem] = useState(null);
@@ -726,74 +1042,29 @@ function CategoriesTab({ products, darkMode }) {
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Editor de Categorias & OEM (Automático)</h2>
-        <p className="text-sm text-slate-400">Todas as peças da planilha já foram mapeadas para as categorias do Mercado Livre para conferência.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Editor de Categorias & OEM</h2>
+        <p className="text-sm text-slate-400">Mapeamento automático para as categorias do Mercado Livre.</p>
       </div>
 
       <div className="space-y-6">
         {products.map((p, idx) => {
           const catInfo = DEPT_CATEGORIES[p.dept] || { id: 'MLB26330', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes' };
-
-          const description = 
-`==================================================
-  ${p.name.toUpperCase()} - SKU: ${p.sku} | MLB: ${p.mlb || 'N/D'}
-==================================================
-
-Peça de alta durabilidade e precisão técnica, importada diretamente do relatório de publicações.
-
-FICHA TÉCNICA:
-- Código SKU / OEM: ${p.sku}
-- Código MLB: ${p.mlb || 'N/D'}
-- Categoria Mercado Livre: ${catInfo.path} (${catInfo.id})
-- Status no ML: ${p.status || 'Ativo'}
-- Data de Publicação: ${p.date || '2026-11-10'}
-- Condição: Produto Novo com Garantia
-- Envio: Pronta Entrega para todo o Brasil
-
-ATENÇÃO E COMPATIBILIDADE:
-Antes de efetuar a compra, confirme a numeração registrada na sua peça original.`;
+          const description = `==================================================\n  ${p.name.toUpperCase()} - SKU: ${p.sku} | MLB: ${p.mlb || 'N/D'}\n==================================================\n\nFicha Técnica e Compatibilidade Garantida.`;
 
           return (
             <div key={p.id || idx} className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl`}>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-3 border-b border-slate-800">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-800">
                 <div>
-                  <div className="flex gap-2 mb-1">
-                    <span className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2 py-0.5 rounded font-bold">SKU: {p.sku}</span>
-                    <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded font-bold">MLB: {p.mlb || 'N/D'}</span>
-                  </div>
-                  <h3 className="font-bold text-slate-100">{p.name}</h3>
+                  <span className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2 py-0.5 rounded font-bold">SKU: {p.sku}</span>
+                  <h3 className="font-bold text-slate-100 mt-1">{p.name}</h3>
                   <p className="text-xs text-slate-400">{catInfo.path}</p>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-3 py-1 rounded-xl border border-blue-500/20 font-bold">
-                    ID: {catInfo.id}
-                  </span>
-                  <button
-                    onClick={() => copyToClipboard(catInfo.id, `cat_${idx}`)}
-                    className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs flex items-center gap-1"
-                  >
-                    {copiedItem === `cat_${idx}` ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                    <span>{copiedItem === `cat_${idx}` ? 'Copiado!' : 'Copiar ID'}</span>
-                  </button>
-                </div>
+                <button onClick={() => copyToClipboard(catInfo.id, `cat_${idx}`)} className="p-2 bg-slate-800 text-slate-300 rounded-xl text-xs flex items-center gap-1">
+                  <Copy className="w-4 h-4" />
+                  <span>{copiedItem === `cat_${idx}` ? 'Copiado!' : catInfo.id}</span>
+                </button>
               </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-300 uppercase">Descrição Pronta para Anúncio</span>
-                  <button
-                    onClick={() => copyToClipboard(description, `desc_${idx}`)}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5"
-                  >
-                    {copiedItem === `desc_${idx}` ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedItem === `desc_${idx}` ? 'Copiado!' : 'Copiar Descrição'}</span>
-                  </button>
-                </div>
-                <pre className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 whitespace-pre-wrap">
-                  {description}
-                </pre>
-              </div>
+              <pre className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 whitespace-pre-wrap">{description}</pre>
             </div>
           );
         })}
@@ -803,30 +1074,21 @@ Antes de efetuar a compra, confirme a numeração registrada na sua peça origin
 }
 
 // ==========================================
-// MÓDULO 5: CONTROLE DE DEVOLUÇÕES
+// MÓDULO: CONTROLE DE DEVOLUÇÕES
 // ==========================================
 function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
-
   const filteredReturns = returnsList.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()) || r.sku.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-800 flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Controle Devoluções</h2>
-          <p className="text-sm text-slate-400">Registre e monitore devoluções de peças.</p>
-        </div>
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">Controle Devoluções</h2>
+        <p className="text-sm text-slate-400">Monitore devoluções salvas no Firebase.</p>
       </div>
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden`}>
         <div className="p-4 border-b border-slate-800">
-          <input
-            type="text"
-            placeholder="Pesquisar devoluções..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs"
-          />
+          <input type="text" placeholder="Pesquisar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs" />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -835,18 +1097,16 @@ function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMo
                 <th className="p-4">Data</th>
                 <th className="p-4">Peça / SKU</th>
                 <th className="p-4">Motivo</th>
-                <th className="p-4">Status Estoque</th>
-                <th className="p-4">Observações</th>
+                <th className="p-4">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
               {filteredReturns.map(r => (
-                <tr key={r.id} className="hover:bg-slate-800/20">
+                <tr key={r.id} className="hover:bg-slate-800/25">
                   <td className="p-4 font-mono text-slate-400">{r.date}</td>
                   <td className="p-4 font-semibold text-slate-200">{r.name} <span className="text-amber-400 font-mono">(SKU: {r.sku})</span></td>
                   <td className="p-4">{r.reason}</td>
                   <td className="p-4"><span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{r.status}</span></td>
-                  <td className="p-4 text-slate-400">{r.notes || '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -858,7 +1118,7 @@ function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMo
 }
 
 // ==========================================
-// MÓDULO 6: EDITOR DE FOTOS (Fundo Branco)
+// MÓDULO: EDITOR DE FOTOS (Fundo Branco)
 // ==========================================
 function PhotoEditorTab({ darkMode }) {
   const [imageSrc, setImageSrc] = useState(null);
@@ -906,22 +1166,15 @@ function PhotoEditorTab({ darkMode }) {
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Editor de Fotos (Fundo Branco Canvas)</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Editor de Fotos (Fundo Branco)</h2>
         <p className="text-sm text-slate-400">Adeque suas fotos aos padrões do Mercado Livre.</p>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-5 text-xs`}>
-          <h3 className="font-bold text-slate-200 text-sm">Controles</h3>
-          <div>
-            <label className="block text-slate-400 mb-1">Enviar Foto</label>
-            <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-slate-400" />
-          </div>
-          <button onClick={handleDownload} disabled={!imageSrc} className="w-full py-2.5 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 font-bold text-slate-950 rounded-xl">
-            Baixar Imagem
-          </button>
+        <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 text-xs`}>
+          <label className="block text-slate-400 mb-1 font-medium">Enviar Foto</label>
+          <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-slate-400" />
+          <button onClick={handleDownload} disabled={!imageSrc} className="w-full py-2.5 bg-amber-400 font-bold text-slate-950 rounded-xl">Baixar Imagem</button>
         </div>
-
         <div className={`lg:col-span-2 p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex items-center justify-center`}>
           <div className="border-2 border-dashed border-slate-700 rounded-2xl p-2 bg-slate-950 max-w-md w-full aspect-square flex items-center justify-center overflow-hidden">
             {imageSrc ? <canvas ref={canvasRef} className="w-full h-full object-contain" /> : <p className="text-xs text-slate-500">Nenhuma foto selecionada.</p>}
@@ -933,7 +1186,7 @@ function PhotoEditorTab({ darkMode }) {
 }
 
 // ==========================================
-// MODAL DE CADASTRO/EDIÇÃO DE PEÇA
+// MODAL DE CADASTRO DE PEÇA
 // ==========================================
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
@@ -952,42 +1205,23 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
           <h3 className="font-bold text-lg">{product ? 'Editar Peça' : 'Cadastrar Nova Peça'}</h3>
           <button onClick={onClose}><X className="w-5 h-5" /></button>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
           <div>
-            <label className="text-slate-400 font-medium">Título da Peça</label>
+            <label className="text-slate-400 font-medium">Título</label>
             <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-slate-400 font-medium">SKU</label>
               <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
             </div>
             <div>
-              <label className="text-slate-400 font-medium">Código MLB</label>
+              <label className="text-slate-400 font-medium">MLB</label>
               <input type="text" value={formData.mlb} onChange={(e) => setFormData({ ...formData, mlb: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-slate-400 font-medium">Departamento</label>
-              <select value={formData.dept} onChange={(e) => setFormData({ ...formData, dept: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white">
-                <option value="mecanica">Mecânica</option>
-                <option value="eletrica">Elétrica</option>
-                <option value="lataria">Lataria</option>
-                <option value="acabamentos">Acabamentos</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-slate-400 font-medium">Data Publicação</label>
-              <input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
-            </div>
-          </div>
-
           <div className="pt-3 flex gap-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl font-medium">Cancelar</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
             <button type="submit" className="flex-1 py-2 bg-amber-400 font-bold text-slate-950 rounded-xl">Salvar</button>
           </div>
         </form>
