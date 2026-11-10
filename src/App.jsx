@@ -33,7 +33,8 @@ import {
   ShoppingBag,
   Percent,
   HelpCircle,
-  Info
+  Info,
+  CheckSquare
 } from 'lucide-react';
 
 // --- CONFIGURAÇÃO FIREBASE ---
@@ -47,10 +48,41 @@ const firebaseConfig = {
   appId: "1:472505973455:web:3b033245b88c8c1f02d5ba"
 };
 
-// --- DADOS INICIAIS DE EXEMPLO ---
+// --- MAPA OFICIAL DE CATEGORIAS DO MERCADO LIVRE (PEÇAS) ---
+function detectCategoryFromTitle(title = '') {
+  const t = title.toLowerCase();
+
+  if (t.includes('motor') || t.includes('coletor') || t.includes('bico') || t.includes('flauta') || t.includes('valvula') || t.includes('comando') || t.includes('correia')) {
+    return { id: 'MLB26330', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor' };
+  }
+  if (t.includes('ignicao') || t.includes('vela') || t.includes('bobina') || t.includes('modulo') || t.includes('alternador') || t.includes('partida')) {
+    return { id: 'MLB193498', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Ignição' };
+  }
+  if (t.includes('freio') || t.includes('pastilha') || t.includes('disco') || t.includes('pinça') || t.includes('abs') || t.includes('cilindro')) {
+    return { id: 'MLB26332', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios' };
+  }
+  if (t.includes('suspensao') || t.includes('amortecedor') || t.includes('bandeja') || t.includes('mola') || t.includes('pivo') || t.includes('homocinetica')) {
+    return { id: 'MLB26331', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Suspensão' };
+  }
+  if (t.includes('farol') || t.includes('lanterna') || t.includes('luz') || t.includes('break light') || t.includes('pisca') || t.includes('lampada')) {
+    return { id: 'MLB270275', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Iluminação > Faróis e Lanternas' };
+  }
+  if (t.includes('para-choque') || t.includes('parachoque') || t.includes('grade') || t.includes('retrovisor') || t.includes('porta') || t.includes('capo') || t.includes('lata')) {
+    return { id: 'MLB412351', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Lataria' };
+  }
+  if (t.includes('radiador') || t.includes('reservatorio') || t.includes('agua') || t.includes('ventoinha') || t.includes('termica') || t.includes('mangueira')) {
+    return { id: 'MLB26333', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Arrefecimento' };
+  }
+  if (t.includes('trava') || t.includes('vidro') || t.includes('banco') || t.includes('painel') || t.includes('volante') || t.includes('cinto') || t.includes('interior')) {
+    return { id: 'MLB181157', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Habitáculo' };
+  }
+
+  return { id: 'MLB1672', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes' };
+}
+
 const DEFAULT_PRODUCTS = [
-  { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v', dept: 'mecanica', status: 'Ativo', date: '2026-11-10', conta: 'DL Auto Peças' },
-  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0', dept: 'mecanica', status: 'Sob Revisão', date: '2026-11-10', conta: 'DL Auto Peças' }
+  { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v 3cc 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Ativo', date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0 Comfort 12v 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Sob Revisão', date: '2026-11-10', conta: 'DL Auto Peças' }
 ];
 
 const DEFAULT_SALES = [
@@ -59,15 +91,8 @@ const DEFAULT_SALES = [
 ];
 
 const DEFAULT_RETURNS = [
-  { id: 'r1', date: '2026-11-10', sku: '12530', name: 'Reservatório Partida Fria Hyundai Hb20', dept: 'mecanica', qty: 1, reason: 'Erro do Comprador', status: 'Reintegrado', notes: 'Comprado modelo errado.' }
+  { id: 'r1', date: '2026-11-10', sku: '12530', name: 'Reservatório Partida Fria Hyundai Hb20', qty: 1, reason: 'Erro do Comprador', status: 'Reintegrado', notes: 'Comprado modelo errado.' }
 ];
-
-const DEPT_CATEGORIES = {
-  mecanica: { id: 'MLB26330', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor' },
-  eletrica: { id: 'MLB193498', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Ignição' },
-  lataria: { id: 'MLB412351', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Lataria' },
-  acabamentos: { id: 'MLB181157', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Habitáculo' }
-};
 
 function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
   const isActive = active === id;
@@ -292,6 +317,7 @@ export default function App() {
           <nav className="p-3 space-y-1">
             <NavItem id="sales-dashboard" label="Dashboard Faturamento & Vendas" icon={BarChart3} active={activeTab} setActive={setActiveTab} badge={salesList.length} />
             <NavItem id="import" label="Importar Peças & Anúncios" icon={FileSpreadsheet} active={activeTab} setActive={setActiveTab} badge={products.length} />
+            <NavItem id="category-audit" label="Auditoria de Categorias" icon={CheckSquare} active={activeTab} setActive={setActiveTab} />
             <NavItem id="manage-sheets" label="Gerenciar / Excluir Planilhas" icon={Trash2} active={activeTab} setActive={setActiveTab} />
             <NavItem id="team-guide" label="Guia & Motivos de Status" icon={HelpCircle} active={activeTab} setActive={setActiveTab} />
             <NavItem id="assistant" label="Editor de Títulos (IA)" icon={Sparkles} active={activeTab} setActive={setActiveTab} />
@@ -343,6 +369,8 @@ export default function App() {
             darkMode={darkMode} 
           />
         )}
+
+        {activeTab === 'category-audit' && <CategoryAuditTab products={products} setProducts={setProducts} darkMode={darkMode} />}
 
         {activeTab === 'manage-sheets' && (
           <ManageSheetsTab 
@@ -461,18 +489,133 @@ function LoginScreen({ onLogin, darkMode, setDarkMode }) {
 }
 
 // ==========================================
-// MÓDULO NOVO: GUIA & MOTIVOS DE STATUS (PARA A EQUIPE)
+// MÓDULO: AUDITORIA DE CATEGORIAS
+// ==========================================
+function CategoryAuditTab({ products, setProducts, darkMode }) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleFixCategory = (productId, newCorrectCat) => {
+    setProducts(products.map(p => {
+      if (p.id === productId) {
+        return { ...p, currentCat: newCorrectCat };
+      }
+      return p;
+    }));
+  };
+
+  const handleFixAll = () => {
+    setProducts(products.map(p => {
+      const correct = detectCategoryFromTitle(p.name);
+      return { ...p, currentCat: correct.name };
+    }));
+  };
+
+  const auditedProducts = products.map(p => {
+    const correct = detectCategoryFromTitle(p.name);
+    const current = p.currentCat || 'Acessórios para Veículos > Peças Gerais';
+    const isMatch = current.trim().toLowerCase() === correct.name.trim().toLowerCase();
+    return { ...p, correctCat: correct.name, correctId: correct.id, isMatch };
+  });
+
+  const filtered = auditedProducts.filter(p => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Auditoria e Comparação de Categorias</h2>
+          <p className="text-sm text-slate-400">Compara a categoria atual cadastrada com a categoria correta exigida pelo Mercado Livre.</p>
+        </div>
+
+        <button 
+          onClick={handleFixAll}
+          className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg flex items-center gap-2 transition-transform active:scale-95"
+        >
+          <Check className="w-4 h-4" />
+          <span>Aplicar Categoria Correta em Todos</span>
+        </button>
+      </div>
+
+      <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex items-center gap-4`}>
+        <Search className="w-4 h-4 text-slate-500" />
+        <input
+          type="text"
+          placeholder="Pesquisar peça por Título ou SKU..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-transparent text-sm text-white focus:outline-none"
+        />
+      </div>
+
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
+              <tr>
+                <th className="p-4">SKU / Título da Peça</th>
+                <th className="p-4">Categoria Atual no Anúncio</th>
+                <th className="p-4">Categoria Correta (Mercado Livre)</th>
+                <th className="p-4 text-center">Status / Ação</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50 text-xs">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="p-8 text-center text-slate-500">Nenhum anúncio encontrado.</td>
+                </tr>
+              ) : (
+                filtered.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="p-4">
+                      <div className="font-bold text-amber-400 font-mono">SKU: {p.sku}</div>
+                      <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
+                    </td>
+                    <td className="p-4 text-slate-300 font-mono">
+                      {p.currentCat || 'Acessórios para Veículos > Peças Gerais'}
+                    </td>
+                    <td className="p-4 text-emerald-400 font-mono font-bold">
+                      {p.correctCat} <span className="text-[10px] text-slate-500 block">ID: {p.correctId}</span>
+                    </td>
+                    <td className="p-4 text-center">
+                      {p.isMatch ? (
+                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 font-bold inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Correto
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleFixCategory(p.id, p.correctCat)}
+                          className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl shadow transition-transform active:scale-95 inline-flex items-center gap-1"
+                        >
+                          <Check className="w-3.5 h-3.5" /> Arrumar Categoria
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// MÓDULO: GUIA & MOTIVOS DE STATUS
 // ==========================================
 function TeamGuideTab({ darkMode }) {
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Guia da Equipe: Entendendo os Status dos Anúncios</h2>
-        <p className="text-sm text-slate-400">Material de leitura e alinhamento para a equipe entender por que os anúncios recebem determinadas marcações.</p>
+        <p className="text-sm text-slate-400">Material de leitura para a equipe entender por que os anúncios recebem determinadas marcações.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* PAUSADOS */}
         <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl`}>
           <div className="flex items-center gap-3">
             <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
@@ -484,22 +627,12 @@ function TeamGuideTab({ darkMode }) {
             </div>
           </div>
           <ul className="space-y-2.5 text-xs text-slate-300">
-            <li className="flex items-start gap-2">
-              <span className="text-amber-400 font-bold">•</span>
-              <span><strong>Estoque Zerado:</strong> O Mercado Livre pausa automaticamente quando a quantidade chega a zero.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-amber-400 font-bold">•</span>
-              <span><strong>Falta de Atualização:</strong> Anúncios muito antigos sem vendas ou com alterações nas regras da categoria.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-amber-400 font-bold">•</span>
-              <span><strong>Pausa Manual:</strong> Pausado intencionalmente pela equipe para revisão de preço ou dados.</span>
-            </li>
+            <li>• <strong>Estoque Zerado:</strong> O ML pausa automaticamente quando a quantidade chega a zero.</li>
+            <li>• <strong>Falta de Atualização:</strong> Anúncios antigos sem movimentação.</li>
+            <li>• <strong>Pausa Manual:</strong> Pausado pela equipe para revisão.</li>
           </ul>
         </div>
 
-        {/* SOB REVISÃO */}
         <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl`}>
           <div className="flex items-center gap-3">
             <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20">
@@ -511,22 +644,12 @@ function TeamGuideTab({ darkMode }) {
             </div>
           </div>
           <ul className="space-y-2.5 text-xs text-slate-300">
-            <li className="flex items-start gap-2">
-              <span className="text-blue-400 font-bold">•</span>
-              <span><strong>Propriedade Intelectual:</strong> Robôs ou marcas checando se a peça e o título usam nomes de marcas registradas sem autorização.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-400 font-bold">•</span>
-              <span><strong>Verificação de Preço:</strong> Alterações bruscas de valores ou termos proibidos na descrição.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-400 font-bold">•</span>
-              <span><strong>Nota Fiscal:</strong> O ML pode exigir comprovante de procedência e nota fiscal da peça automotiva.</span>
-            </li>
+            <li>• <strong>Propriedade Intelectual:</strong> Verificação de marca ou uso de nomes protegidos.</li>
+            <li>• <strong>Verificação de Preço:</strong> Alterações bruscas de valor.</li>
+            <li>• <strong>Nota Fiscal:</strong> Exigência de comprovação de procedência.</li>
           </ul>
         </div>
 
-        {/* FINALIZADOS */}
         <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl`}>
           <div className="flex items-center gap-3">
             <div className="p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20">
@@ -538,18 +661,9 @@ function TeamGuideTab({ darkMode }) {
             </div>
           </div>
           <ul className="space-y-2.5 text-xs text-slate-300">
-            <li className="flex items-start gap-2">
-              <span className="text-red-400 font-bold">•</span>
-              <span><strong>Prazo Expirado:</strong> Anúncios gratuitos que expiraram após o período sem vendas.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-red-400 font-bold">•</span>
-              <span><strong>Exclusão Permanente:</strong> Anúncio encerrado definitivamente por você ou pela limpeza de estoque.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-red-400 font-bold">•</span>
-              <span><strong>Infração Grave:</strong> Encerramento definitivo por violação das políticas de produtos proibidos.</span>
-            </li>
+            <li>• <strong>Prazo Expirado:</strong> Anúncios gratuitos expirados.</li>
+            <li>• <strong>Exclusão Permanente:</strong> Encerrado por limpeza de estoque.</li>
+            <li>• <strong>Infração Grave:</strong> Violação das políticas do ML.</li>
           </ul>
         </div>
       </div>
@@ -628,7 +742,7 @@ function SalesDashboardTab({ salesList, setSalesList, currentUser, darkMode }) {
         });
 
         setSalesList([...importedSales, ...salesList]);
-        setImportStatus(`Sucesso! ${importedSales.length} vendas importadas e salvas no Firebase.`);
+        setImportStatus(`Sucesso! ${importedSales.length} vendas importadas.`);
       } catch (err) {
         console.error(err);
         setImportStatus('Erro ao ler a planilha de vendas.');
@@ -681,7 +795,6 @@ function SalesDashboardTab({ salesList, setSalesList, currentUser, darkMode }) {
           <div className="text-2xl font-black font-mono text-amber-400">
             R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-[10px] text-slate-500">Valor líquido de vendas</div>
         </div>
 
         <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg`}>
@@ -692,7 +805,6 @@ function SalesDashboardTab({ salesList, setSalesList, currentUser, darkMode }) {
           <div className="text-2xl font-black font-mono text-blue-400">
             {totalCount} <span className="text-xs font-normal text-slate-400">pedidos</span>
           </div>
-          <div className="text-[10px] text-slate-500">Transações realizadas</div>
         </div>
 
         <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg`}>
@@ -703,7 +815,6 @@ function SalesDashboardTab({ salesList, setSalesList, currentUser, darkMode }) {
           <div className="text-2xl font-black font-mono text-emerald-400">
             R$ {averageTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-[10px] text-slate-500">Média por pedido</div>
         </div>
 
         <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg`}>
@@ -714,7 +825,6 @@ function SalesDashboardTab({ salesList, setSalesList, currentUser, darkMode }) {
           <div className="text-2xl font-black font-mono text-red-400">
             R$ {totalDiscount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-          <div className="text-[10px] text-slate-500">Descontos concedidos</div>
         </div>
       </div>
 
@@ -746,7 +856,7 @@ function SalesDashboardTab({ salesList, setSalesList, currentUser, darkMode }) {
           <span>Transações Listadas ({filteredSales.length})</span>
           {filterDate && (
             <button onClick={() => setFilterDate('')} className="text-blue-400 hover:underline">
-              Limpar Filtro da Data ({filterDate})
+              Limpar Filtro ({filterDate})
             </button>
           )}
         </div>
@@ -834,6 +944,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           const name = String(row['Título'] || row['titulo'] || 'Peça Automotiva');
           const status = String(row['Status'] || 'Ativo');
           const conta = String(row['Conta'] || 'DL Auto Peças');
+          const currentCat = String(row['Categoria'] || 'Acessórios para Veículos > Peças Gerais');
           
           let rawDate = row['Data da Publicação'] || row['Data'] || new Date().toISOString();
           let formattedDate = new Date().toISOString().slice(0, 10);
@@ -853,7 +964,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
             sku,
             mlb,
             name,
-            dept: name.toLowerCase().includes('bomba') || name.toLowerCase().includes('coletor') || name.toLowerCase().includes('motor') ? 'mecanica' : 'eletrica',
+            currentCat,
             status,
             date: formattedDate,
             conta
@@ -861,7 +972,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
         });
 
         setProducts([...imported, ...products]);
-        setImportStatus(`Sucesso! ${imported.length} peças importadas e salvas no Firebase.`);
+        setImportStatus(`Sucesso! ${imported.length} peças importadas.`);
       } catch (err) {
         console.error(err);
         setImportStatus('Erro ao ler a planilha Excel.');
@@ -883,7 +994,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
       <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Importar Peças & Anúncios</h2>
-          <p className="text-sm text-slate-400">Puxe o catálogo de publicações sincronizado na nuvem.</p>
+          <p className="text-sm text-slate-400">Puxe o catálogo de publicações do Mercado Livre.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -935,7 +1046,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           <span>Total de Anúncios Exibidos: <strong className="text-amber-400 font-mono text-sm">{filteredProducts.length}</strong></span>
           {filterDate && (
             <button onClick={() => setFilterDate('')} className="text-blue-400 hover:underline">
-              Limpar Filtro da Data ({filterDate})
+              Limpar Filtro ({filterDate})
             </button>
           )}
         </div>
@@ -1135,13 +1246,13 @@ function CategoriesTab({ products, darkMode }) {
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Editor de Categorias & OEM</h2>
-        <p className="text-sm text-slate-400">Mapeamento automático para as categorias do Mercado Livre.</p>
+        <p className="text-sm text-slate-400">Mapeamento para as categorias do Mercado Livre.</p>
       </div>
 
       <div className="space-y-6">
         {products.map((p, idx) => {
-          const catInfo = DEPT_CATEGORIES[p.dept] || { id: 'MLB26330', path: 'Acessórios para Veículos > Peças de Carros e Caminhonetes' };
-          const description = `==================================================\n  ${p.name.toUpperCase()} - SKU: ${p.sku} | MLB: ${p.mlb || 'N/D'}\n==================================================\n\nFicha Técnica e Compatibilidade Garantida.`;
+          const catInfo = detectCategoryFromTitle(p.name);
+          const description = `==================================================\n  ${p.name.toUpperCase()} - SKU: ${p.sku} | MLB: ${p.mlb || 'N/D'}\n==================================================\n\nCategoria ML: ${catInfo.name} (${catInfo.id})\nFicha Técnica e Compatibilidade Garantida.`;
 
           return (
             <div key={p.id || idx} className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl`}>
@@ -1149,7 +1260,7 @@ function CategoriesTab({ products, darkMode }) {
                 <div>
                   <span className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2 py-0.5 rounded font-bold">SKU: {p.sku}</span>
                   <h3 className="font-bold text-slate-100 mt-1">{p.name}</h3>
-                  <p className="text-xs text-slate-400">{catInfo.path}</p>
+                  <p className="text-xs text-slate-400">{catInfo.name}</p>
                 </div>
                 <button onClick={() => copyToClipboard(catInfo.id, `cat_${idx}`)} className="p-2 bg-slate-800 text-slate-300 rounded-xl text-xs flex items-center gap-1">
                   <Copy className="w-4 h-4" />
@@ -1282,7 +1393,7 @@ function PhotoEditorTab({ darkMode }) {
 // ==========================================
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
-    product || { sku: '', mlb: '', name: '', dept: 'mecanica', status: 'Ativo', date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças' }
+    product || { sku: '', mlb: '', name: '', status: 'Ativo', date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '' }
   );
 
   const handleSubmit = (e) => {
