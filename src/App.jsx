@@ -1,111 +1,133 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Car, Sun, Moon, Shield, Briefcase, LogOut, BarChart3, FileSpreadsheet,
-  Store, TrendingUp, Calculator, MessageSquare, Zap, PieChart, CheckSquare,
-  Trash2, HelpCircle, Sparkles, FolderTree, RotateCcw, Image as ImageIcon,
-  RefreshCw, Search, Lock, ShieldAlert, Check, Copy, Tag, FileCode,
-  AlertTriangle, CheckCircle2, FileText, User, Bot, Paperclip, Send, X,
-  DollarSign, ShoppingBag, Percent, Upload, Edit, Plus, Info, Truck, PackageCheck
+  BarChart3,
+  PackageCheck,
+  RotateCcw,
+  Search,
+  Sparkles,
+  Image as ImageIcon,
+  FolderTree,
+  Plus,
+  Trash2,
+  Edit,
+  Download,
+  AlertTriangle,
+  CheckCircle2,
+  FileSpreadsheet,
+  Moon,
+  Sun,
+  Layers,
+  Copy,
+  Wand2,
+  RefreshCw,
+  X,
+  Check,
+  Upload,
+  Car,
+  Lock,
+  LogOut,
+  Shield,
+  Briefcase,
+  Calendar,
+  DollarSign,
+  ShoppingBag,
+  Percent,
+  HelpCircle,
+  Info,
+  CheckSquare,
+  TrendingUp,
+  Calculator,
+  PieChart,
+  MessageSquare,
+  Send,
+  Bot,
+  User,
+  Paperclip,
+  FileText,
+  Truck,
+  Zap,
+  Tag,
+  ShieldAlert,
+  FileCode,
+  Store
 } from 'lucide-react';
 
-// ==========================================
-// DADOS INICIAIS DE EXEMPLO
-// ==========================================
-const DEFAULT_PRODUCTS = [
-  {
-    id: 'prod_1',
-    sku: '12531',
-    mlb: 'MLB5539291609',
-    name: 'Coletor Admissao Hb20 1.0 3c 2018 283102b000',
-    status: 'Ativo',
-    price: 180.00,
-    wholesalePrice: 150.00,
-    wholesaleMinQty: 4,
-    costPrice: 75.00,
-    stock: 8,
-    date: '2026-11-10',
-    conta: 'DL Auto Peças',
-    currentCat: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Injeção'
-  },
-  {
-    id: 'prod_2',
-    sku: '12532',
-    mlb: 'MLB5539291610',
-    name: 'Reservatorio Partida Fria Hb20 1.0 2015',
-    status: 'Sob Revisão',
-    price: 95.00,
-    wholesalePrice: 80.00,
-    wholesaleMinQty: 5,
-    costPrice: 35.00,
-    stock: 2,
-    date: '2026-11-10',
-    conta: 'DL Auto Peças',
-    currentCat: 'Acessórios para Veículos > Peças Gerais'
+// --- CONFIGURAÇÃO FIREBASE ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBDKksCn466pxCm0kbRYN5Ia2HqVbQkUMM",
+  authDomain: "mercadolivredl-dba3b.firebaseapp.com",
+  databaseURL: "https://mercadolivredl-dba3b-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "mercadolivredl-dba3b",
+  storageBucket: "mercadolivredl-dba3b.firebasestorage.app",
+  messagingSenderId: "472505973455",
+  appId: "1:472505973455:web:3b033245b88c8c1f02d5ba"
+};
+
+// --- MAPA OFICIAL DE CATEGORIAS DO MERCADO LIVRE (PEÇAS) ---
+function detectCategoryFromTitle(title = '') {
+  const t = title.toLowerCase();
+
+  if (t.includes('motor') || t.includes('coletor') || t.includes('bico') || t.includes('flauta') || t.includes('valvula') || t.includes('comando') || t.includes('correia')) {
+    return { id: 'MLB26330', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Motor' };
   }
+  if (t.includes('ignicao') || t.includes('vela') || t.includes('bobina') || t.includes('modulo') || t.includes('alternador') || t.includes('partida')) {
+    return { id: 'MLB193498', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Ignição' };
+  }
+  if (t.includes('freio') || t.includes('pastilha') || t.includes('disco') || t.includes('pinça') || t.includes('abs') || t.includes('cilindro')) {
+    return { id: 'MLB26332', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios' };
+  }
+  if (t.includes('suspensao') || t.includes('amortecedor') || t.includes('bandeja') || t.includes('mola') || t.includes('pivo') || t.includes('homocinetica')) {
+    return { id: 'MLB26331', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Suspensão' };
+  }
+  if (t.includes('farol') || t.includes('lanterna') || t.includes('luz') || t.includes('break light') || t.includes('pisca') || t.includes('lampada')) {
+    return { id: 'MLB270275', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Iluminação > Faróis e Lanternas' };
+  }
+  if (t.includes('para-choque') || t.includes('parachoque') || t.includes('grade') || t.includes('retrovisor') || t.includes('porta') || t.includes('capo') || t.includes('lata')) {
+    return { id: 'MLB412351', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Lataria' };
+  }
+  if (t.includes('radiador') || t.includes('reservatorio') || t.includes('agua') || t.includes('ventoinha') || t.includes('termica') || t.includes('mangueira')) {
+    return { id: 'MLB26333', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Arrefecimento' };
+  }
+  if (t.includes('trava') || t.includes('vidro') || t.includes('banco') || t.includes('painel') || t.includes('volante') || t.includes('cinto') || t.includes('interior')) {
+    return { id: 'MLB181157', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Habitáculo' };
+  }
+
+  return { id: 'MLB1672', name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes' };
+}
+
+const DEFAULT_PRODUCTS = [
+  { id: 'p1', sku: '12531', mlb: 'MLB5539291609', name: 'Coletor Admissão Hyundai Hb20 1.0 Comfort 12v 3cc 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Ativo', price: 249.90, wholesalePrice: 210.00, wholesaleMinQty: 4, costPrice: 90.00, stock: 2, date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p2', sku: '12530', mlb: 'MLB5539290589', name: 'Reservatório Partida Fria Hyundai Hb20 1.0 Comfort 12v 2015', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Sob Revisão', price: 120.00, wholesalePrice: 100.00, wholesaleMinQty: 4, costPrice: 40.00, stock: 1, date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p3', sku: '12529', mlb: 'MLB5539289953', name: 'Trava Elétrica Tampa Traseira Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Pausado', price: 180.00, wholesalePrice: 150.00, wholesaleMinQty: 4, costPrice: 70.00, stock: 0, date: '2026-11-10', conta: 'DL Auto Peças' },
+  { id: 'p4', sku: '12528', mlb: 'MLB7971719130', name: 'Flauta C/ Bicos Injetores Hyundai Hb20 1.0', currentCat: 'Acessórios para Veículos > Peças Gerais', status: 'Finalizado', price: 350.00, wholesalePrice: 299.00, wholesaleMinQty: 4, costPrice: 150.00, stock: 0, date: '2026-11-10', conta: 'DL Auto Peças' }
 ];
 
 const DEFAULT_SALES = [
-  {
-    id: 'sale_1',
-    saleId: '2000001',
-    client: 'Oficina Mecânica Silva',
-    value: 360.00,
-    discount: 20.00,
-    date: '2026-11-10',
-    payment: 'Pix',
-    nfe: '001245',
-    trackingCode: 'BR987654321X',
-    trackingStatus: 'Em Trânsito'
-  }
+  { id: 's1', saleId: '3506074', client: 'Italo Ferreira Matos', value: 248.17, discount: 50.83, date: '2026-11-09', payment: 'Transferência Bancária', nfe: '10733', trackingCode: 'BR987654321X', trackingStatus: 'Em Trânsito / A Caminho' }
 ];
 
 const DEFAULT_RETURNS = [
-  {
-    id: 'ret_1',
-    date: '2026-11-09',
-    sku: '12531',
-    name: 'Coletor Admissao Hb20 1.0 3c 2018',
-    value: 180.00,
-    reason: 'Arrependimento / Erro do Comprador',
-    status: 'Reintegrado ao Estoque',
-    notes: 'Peça voltou intacta'
-  }
+  { id: 'r1', date: '2026-11-10', sku: '12530', name: 'Reservatório Partida Fria Hyundai Hb20', value: 120.00, qty: 1, reason: 'Erro do Comprador', status: 'Reintegrado', notes: 'Comprado modelo errado.' }
 ];
 
-// Função utilitária para detectar categoria baseada no título da peça
-function detectCategoryFromTitle(title = '') {
-  const t = title.toLowerCase();
-  if (t.includes('coletor') || t.includes('injeção') || t.includes('bico')) {
-    return { name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Injeção', id: 'MLB1660' };
-  }
-  if (t.includes('reservatorio') || t.includes('radiador') || t.includes('água')) {
-    return { name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Eletroventiladores e Radiadores', id: 'MLB403323' };
-  }
-  if (t.includes('freio') || t.includes('pastilha') || t.includes('disco')) {
-    return { name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios', id: 'MLB8444' };
-  }
-  return { name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Peças de Motor', id: 'MLB24424' };
-}
-
-// Componente de item da barra lateral
 function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
-  const isSelected = active === id;
+  const isActive = active === id;
   return (
     <button
       onClick={() => setActive(id)}
-      className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-all ${
-        isSelected
-          ? 'bg-amber-400 text-slate-950 font-bold shadow-md shadow-amber-400/20'
-          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+        isActive 
+          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' 
+          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
       }`}
     >
-      <div className="flex items-center gap-2.5 overflow-hidden">
-        <Icon className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-slate-950' : 'text-slate-400'}`} />
-        <span className="truncate">{label}</span>
+      <div className="flex items-center gap-3">
+        {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
+        <span>{label}</span>
       </div>
       {badge !== undefined && badge > 0 && (
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-          isSelected ? 'bg-slate-950 text-amber-400' : 'bg-slate-800 text-slate-300'
+        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+          isActive ? 'bg-white text-blue-600' : 'bg-slate-800 text-slate-300'
         }`}>
           {badge}
         </span>
@@ -114,47 +136,116 @@ function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
   );
 }
 
-// ==========================================
-// COMPONENTE PRINCIPAL (APP)
-// ==========================================
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [darkMode, setDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState('sales-dashboard');
-  const [firebaseConnected] = useState(true);
+  const [darkMode, setDarkMode] = useState(true);
+  const [firebaseConnected, setFirebaseConnected] = useState(false);
+
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('ml_user');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('autoflex_products');
+    const saved = localStorage.getItem('ml_products');
     return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
   });
 
   const [salesList, setSalesList] = useState(() => {
-    const saved = localStorage.getItem('autoflex_sales');
+    const saved = localStorage.getItem('ml_sales');
     return saved ? JSON.parse(saved) : DEFAULT_SALES;
   });
 
   const [returnsList, setReturnsList] = useState(() => {
-    const saved = localStorage.getItem('autoflex_returns');
+    const saved = localStorage.getItem('ml_returns');
     return saved ? JSON.parse(saved) : DEFAULT_RETURNS;
   });
 
-  const [editingProduct, setEditingProduct] = useState(null);
+  useEffect(() => {
+    const initFirebase = async () => {
+      try {
+        if (!window.firebase) {
+          await loadScript('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
+          await loadScript('https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js');
+        }
+
+        if (window.firebase && !window.firebase.apps.length) {
+          window.firebase.initializeApp(firebaseConfig);
+        }
+
+        if (window.firebase) {
+          const dbRef = window.firebase.database().ref('mercadolivredl');
+          dbRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+              if (data.products) setProducts(data.products);
+              if (data.salesList) setSalesList(data.salesList);
+              if (data.returnsList) setReturnsList(data.returnsList);
+              setFirebaseConnected(true);
+            } else {
+              dbRef.set({ products, salesList, returnsList });
+              setFirebaseConnected(true);
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Erro ao conectar ao Firebase:', err);
+        setFirebaseConnected(false);
+      }
+    };
+
+    initFirebase();
+  }, []);
+
+  const loadScript = (src) => {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  };
+
+  useEffect(() => {
+    localStorage.setItem('ml_products', JSON.stringify(products));
+    localStorage.setItem('ml_sales', JSON.stringify(salesList));
+    localStorage.setItem('ml_returns', JSON.stringify(returnsList));
+
+    if (window.firebase && window.firebase.apps.length) {
+      const dbRef = window.firebase.database().ref('mercadolivredl');
+      dbRef.set({ products, salesList, returnsList }).catch(err => console.error(err));
+    }
+  }, [products, salesList, returnsList]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('ml_user', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('ml_user');
+    }
+  }, [currentUser]);
+
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-
-  useEffect(() => {
-    localStorage.setItem('autoflex_products', JSON.stringify(products));
-  }, [products]);
-
-  useEffect(() => {
-    localStorage.setItem('autoflex_sales', JSON.stringify(salesList));
-  }, [salesList]);
-
-  useEffect(() => {
-    localStorage.setItem('autoflex_returns', JSON.stringify(returnsList));
-  }, [returnsList]);
+  const [editingProduct, setEditingProduct] = useState(null);
 
   const handleLogout = () => {
     setCurrentUser(null);
+  };
+
+  const handleSaveProduct = (productData) => {
+    if (productData.id) {
+      setProducts(products.map(p => p.id === productData.id ? productData : p));
+    } else {
+      const newProd = { ...productData, id: 'p_' + Date.now() };
+      setProducts([newProd, ...products]);
+    }
+    setIsProductModalOpen(false);
+    setEditingProduct(null);
   };
 
   const handleDeleteProduct = (id) => {
@@ -162,19 +253,9 @@ export default function App() {
       alert('Apenas administradores podem excluir peças.');
       return;
     }
-    if (window.confirm('Tem certeza de que deseja excluir este produto?')) {
+    if (window.confirm('Tem certeza que deseja excluir esta peça?')) {
       setProducts(products.filter(p => p.id !== id));
     }
-  };
-
-  const handleSaveProduct = (formData) => {
-    if (editingProduct) {
-      setProducts(products.map(p => p.id === editingProduct.id ? { ...formData, id: p.id } : p));
-    } else {
-      setProducts([{ ...formData, id: 'prod_' + Date.now() }, ...products]);
-    }
-    setIsProductModalOpen(false);
-    setEditingProduct(null);
   };
 
   const handleDeleteSheetByDate = (dateToDelete) => {
@@ -452,13 +533,13 @@ function WholesaleCalculatorTab({ products, darkMode }) {
   const currentProd = products.find(p => p.sku === selectedSku) || products[0] || {
     name: 'Peça Padrão',
     price: 150.00,
-    wholesalePrice: 127.50,
+    wholesalePrice: 120.00,
     wholesaleMinQty: 4
   };
 
-  const precoVarejo = Number(currentProd.price !== undefined ? currentProd.price : 150.00);
-  const precoAtacado = Number(currentProd.wholesalePrice !== undefined ? currentProd.wholesalePrice : (precoVarejo * 0.85));
-  const qtdMinimaAtacado = Number(currentProd.wholesaleMinQty !== undefined ? currentProd.wholesaleMinQty : 4);
+  const precoVarejo = currentProd.price || 150.00;
+  const precoAtacado = currentProd.wholesalePrice || (precoVarejo * 0.85);
+  const qtdMinimaAtacado = currentProd.wholesaleMinQty || 4;
 
   const ehAtacado = quantity >= qtdMinimaAtacado;
   const precoAplicado = ehAtacado ? precoAtacado : precoVarejo;
@@ -1979,7 +2060,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           const status = String(row['Status'] || 'Ativo');
           const conta = String(row['Conta'] || 'DL Auto Peças');
           const currentCat = String(row['Categoria'] || 'Acessórios para Veículos > Peças Gerais');
-          const price = Number(row['Preço'] || row['Preço Varejo'] || 150.00);
+          const price = Number(row['Preço'] || 150.00);
           const wholesalePrice = Number(row['Preço Atacado'] || (price * 0.85));
           const wholesaleMinQty = Number(row['Qtd Atacado'] || 4);
           const costPrice = Number(row['Custo'] || 60.00);
@@ -2611,13 +2692,7 @@ function PhotoEditorTab({ darkMode }) {
         <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 text-xs`}>
           <label className="block text-slate-400 mb-1 font-medium">Enviar Foto</label>
           <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-slate-400" />
-          <div className="space-y-2 pt-2">
-            <label className="block text-slate-400 font-medium">Brilho: {brightness}%</label>
-            <input type="range" min="50" max="150" value={brightness} onChange={(e) => setBrightness(e.target.value)} className="w-full" />
-            <label className="block text-slate-400 font-medium">Contraste: {contrast}%</label>
-            <input type="range" min="50" max="150" value={contrast} onChange={(e) => setContrast(e.target.value)} className="w-full" />
-          </div>
-          <button onClick={handleDownload} disabled={!imageSrc} className="w-full py-2.5 bg-amber-400 font-bold text-slate-950 rounded-xl disabled:opacity-50">Baixar Imagem</button>
+          <button onClick={handleDownload} disabled={!imageSrc} className="w-full py-2.5 bg-amber-400 font-bold text-slate-950 rounded-xl">Baixar Imagem</button>
         </div>
         <div className={`lg:col-span-2 p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex items-center justify-center`}>
           <div className="border-2 border-dashed border-slate-700 rounded-2xl p-2 bg-slate-950 max-w-md w-full aspect-square flex items-center justify-center overflow-hidden">
