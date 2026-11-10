@@ -41,7 +41,9 @@ import {
   MessageSquare,
   Send,
   Bot,
-  User
+  User,
+  Paperclip,
+  FileText
 } from 'lucide-react';
 
 // --- CONFIGURAÇÃO FIREBASE ---
@@ -787,51 +789,90 @@ function MarginCalculatorTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 4: FAQ & COMPATIBILIDADE CHAT INTERATIVO (IA)
+// MÓDULO 4: FAQ, COMPATIBILIDADE, NCM, CEST E VISÃO IA (FOTO OEM)
 // ==========================================
 function FaqHelperTab({ products, darkMode }) {
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
-      text: 'Olá! Sou o assistente de IA especializado em autopeças. Pode digitar sua dúvida de compatibilidade (ex: "Serve no Gol G5?", "Qual óleo usar?", "Compatibilidade do coletor Hb20?") e eu ajudo sua equipe a responder na hora!'
+      text: 'Olá! Sou o assistente de IA especializado em autopeças. Posso tirar dúvidas de compatibilidade, indicar o NCM/CEST e a tributação correta para emissão de NFe, ou identificar o código OEM original através da foto da peça ou da etiqueta!'
     }
   ]);
   const [inputVal, setInputVal] = useState('');
+  const [attachedImage, setAttachedImage] = useState(null);
+  const fileInputRef = useRef(null);
   const chatBottomRef = useRef(null);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleImageAttach = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setAttachedImage(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!inputVal.trim()) return;
+    if (!inputVal.trim() && !attachedImage) return;
 
     const userMsg = inputVal.trim();
-    const newMessages = [...messages, { sender: 'user', text: userMsg }];
+    const hasImage = !!attachedImage;
+    const currentImg = attachedImage;
+
+    const newMessages = [
+      ...messages,
+      {
+        sender: 'user',
+        text: userMsg || 'Anexei uma foto para identificação de OEM/Peça.',
+        image: currentImg
+      }
+    ];
+
     setMessages(newMessages);
     setInputVal('');
+    setAttachedImage(null);
 
+    // Respostas simuladas inteligentes incluindo NCM, CEST, OEM e foto
     setTimeout(() => {
-      let aiResponse = "Com base no catálogo e nas políticas do Mercado Livre, recomendamos confirmar o código OEM da peça antiga antes do envio para evitar devoluções por incompatibilidade de versão.";
+      let aiResponse = "";
       const query = userMsg.toLowerCase();
 
-      if (query.includes('hb20') || query.includes('hyundai')) {
-        aiResponse = "Para a linha Hyundai HB20 (1.0 3cc / 1.6), verifique se o conector e o ano correspondem (2012 a 2019). A peça possui garantia de 3 meses e nota fiscal emitida automaticamente.";
-      } else if (query.includes('gol') || query.includes('voyage') || query.includes('vw') || query.includes('volkswagen')) {
-        aiResponse = "Para veículos Volkswagen com motores EA111 ou EA211 (Gol, Voyage, Fox), certifique-se de conferir o encaixe do suporte e a numeração gravada na peça original.";
-      } else if (query.includes('onix') || query.includes('prisma') || query.includes('gm') || query.includes('chevrolet')) {
-        aiResponse = "Para Chevrolet Onix / Prisma (geração 1 e 2), esta peça atende perfeitamente os motores SPE/4. Lembre-se de informar ao cliente que o frete expresso garante postagem no mesmo dia útil se aprovado até as 14h.";
-      } else if (query.includes('fiat') || query.includes('palio') || query.includes('uno') || query.includes('argo')) {
-        aiResponse = "Para veículos Fiat (Linha Fire / Firefly / Evo), confirme se o veículo possui ar condicionado ou direção hidráulica caso isso interfira na correia ou polia correspondente.";
-      } else if (query.includes('frete') || query.includes('envio')) {
-        aiResponse = "Nossos envios são realizados pelo Mercado Coletas com entrega rápida e segura. Anúncios acima de R$ 79,00 contam com benefício de frete grátis para o comprador dependendo da sua reputação.";
-      } else if (query.includes('garantia') || query.includes('nota fiscal') || query.includes('nfe')) {
-        aiResponse = "Sim! Emitimos Nota Fiscal eletrônica para todas as vendas (CPF ou CNPJ) e oferecemos 90 dias de garantia contra defeitos de fabricação.";
+      if (hasImage) {
+        aiResponse = "🔍 **Análise Visual da Foto da Peça Concluída:**\n\n" +
+          "• **Código OEM Identificado:** 28310-2B000 / 04E129709\n" +
+          "• **Peça:** Coletor de Admissão com Sensor TMAP integrados.\n" +
+          "• **NCM:** 8409.91.90 (Partes reconhecíveis como destinadas a motores de ignição por centelha)\n" +
+          "• **CEST:** 01.030.00 (Peças e acessórios para veículos automotores)\n" +
+          "• **Tributação (ICMS-ST / Simples):** Sujeito à Substituição Tributária dependendo do estado de destino. Anexar chave NFe do fornecedor original.";
+      } else if (query.includes('ncm') || query.includes('cest') || query.includes('tribut') || query.includes('imposto')) {
+        if (query.includes('freio') || query.includes('pastilha') || query.includes('disco')) {
+          aiResponse = "📋 **Ficha Fiscal & Tributação - Freios:**\n\n• **NCM:** 8708.30.90 / 8708.30.19\n• **CEST:** 01.006.00\n• **Regime:** Substituição Tributária (ICMS-ST com MVA de autopeças ajustada). Alíquota Simples Nacional média: 4% a 7.5%.";
+        } else if (query.includes('motor') || query.includes('coletor') || query.includes('bico')) {
+          aiResponse = "📋 **Ficha Fiscal & Tributação - Componentes de Motor:**\n\n• **NCM:** 8409.91.90\n• **CEST:** 01.030.00\n• **Regime:** Peça automotiva com ST na maioria dos estados brasileiros. Emitir NFe com CSOSN 500 (Simples) ou CST 060 (Lucro Presumido).";
+        } else if (query.includes('suspensao') || query.includes('amortecedor')) {
+          aiResponse = "📋 **Ficha Fiscal & Tributação - Suspensão:**\n\n• **NCM:** 8708.80.00\n• **CEST:** 01.018.00\n• **Regime:** PIS/COFINS Monofásico no fabricante / distribuidor. Emitir NFe alíquota zero de PIS/COFINS no Simples Nacional se revendido.";
+        } else {
+          aiResponse = "📋 **Consulta de NCM / CEST Geral (Autopeças):**\n\n• **Capítulo 8708 (Partes e acessórios de veículos):** NCM padrão 8708.29.99 / CEST 01.999.00.\n• Digite o nome da peça (ex: 'NCM freio', 'NCM amortecedor') ou envie uma foto para especificação exata do código fiscal.";
+        }
+      } else if (query.includes('oem') || query.includes('codigo') || query.includes('código')) {
+        aiResponse = "Para encontrar o código OEM original de uma peça sem a embalagem, você pode mandar uma foto legível da gravação física da peça aqui no chat (clicando no ícone do clipe de papel) ou conferir o catálogo eletrônico pela placa do veículo.";
+      } else if (query.includes('hb20') || query.includes('hyundai')) {
+        aiResponse = "Para a linha Hyundai HB20 (1.0 3cc / 1.6), verifique se o conector e o ano correspondem (2012 a 2019).\n\n• **OEM Comum:** 28310-04000\n• **NCM:** 8409.91.90 | **CEST:** 01.030.00";
+      } else if (query.includes('gol') || query.includes('vw') || query.includes('volkswagen')) {
+        aiResponse = "Para veículos VW (Motores EA111 / EA211):\n\n• **OEM Comum:** 036129709FE\n• **NCM:** 8708.29.99 | **CEST:** 01.004.00";
+      } else {
+        aiResponse = "Com base nas regras do Mercado Livre e tributação fiscal de autopeças: recomendamos preencher sempre o campo de NCM e Código Universal / OEM no cadastro do anúncio para aumentar o score de relevância em até 30%.";
       }
 
       setMessages([...newMessages, { sender: 'ai', text: aiResponse }]);
-    }, 600);
+    }, 700);
   };
 
   const handleQuickQuestion = (qText) => {
@@ -841,22 +882,25 @@ function FaqHelperTab({ products, darkMode }) {
   return (
     <div className="space-y-6 flex flex-col h-[calc(100vh-140px)]">
       <div className="pb-4 border-b border-slate-800 flex-shrink-0">
-        <h2 className="text-2xl font-bold tracking-tight">FAQ Inteligente & Assistente de Compatibilidade (IA)</h2>
-        <p className="text-sm text-slate-400">Faça perguntas em tempo real para a IA gerar respostas de atendimento prontas para sua equipe.</p>
+        <h2 className="text-2xl font-bold tracking-tight">FAQ, NCM/CEST & Leitor de OEM por Foto (IA)</h2>
+        <p className="text-sm text-slate-400">Faça perguntas sobre compatibilidade, obtenha códigos NCM/CEST fiscais ou envie uma foto da peça para descobrir o OEM.</p>
       </div>
 
       <div className="flex flex-wrap gap-2 flex-shrink-0">
+        <button onClick={() => handleQuickQuestion("Qual o NCM e CEST para bomba de combustível e bicos?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors flex items-center gap-1.5">
+          <FileText className="w-3.5 h-3.5 text-amber-400" />
+          <span>NCM & CEST de Injeção</span>
+        </button>
+        <button onClick={() => handleQuickQuestion("NCM e tributação de discos e pastilhas de freio")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors flex items-center gap-1.5">
+          <FileText className="w-3.5 h-3.5 text-blue-400" />
+          <span>NCM Freios (ICMS-ST)</span>
+        </button>
+        <button onClick={() => handleQuickQuestion("Como achar o OEM da peça pela foto?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors flex items-center gap-1.5">
+          <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Descobrir OEM por Foto</span>
+        </button>
         <button onClick={() => handleQuickQuestion("Serve no HB20 2015 1.0?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors">
-          🚗 Serve no HB20 2015?
-        </button>
-        <button onClick={() => handleQuickQuestion("Qual a garantia e se emite nota fiscal?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors">
-          📄 Emite Nota Fiscal / Garantia?
-        </button>
-        <button onClick={() => handleQuickQuestion("Serve no Gol G5 1.0?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors">
-          🚙 Compatível com Gol G5?
-        </button>
-        <button onClick={() => handleQuickQuestion("Prazo de postagem e envio")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors">
-          📦 Prazo de Envio
+          🚗 Compatibilidade HB20
         </button>
       </div>
 
@@ -869,31 +913,68 @@ function FaqHelperTab({ products, darkMode }) {
               }`}>
                 {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
               </div>
-              <div className={`max-w-[80%] p-4 rounded-2xl text-xs leading-relaxed ${
+              <div className={`max-w-[80%] p-4 rounded-2xl text-xs leading-relaxed space-y-2 ${
                 msg.sender === 'user' 
                   ? 'bg-blue-600 text-white rounded-tr-none' 
                   : darkMode ? 'bg-slate-800/80 text-slate-200 rounded-tl-none border border-slate-700/60' : 'bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200'
               }`}>
-                {msg.text}
+                {msg.image && (
+                  <div className="mb-2">
+                    <img src={msg.image} alt="Peça Anexada" className="max-w-xs max-h-48 rounded-xl border border-slate-700 object-cover shadow-md" />
+                  </div>
+                )}
+                <div className="whitespace-pre-wrap">{msg.text}</div>
               </div>
             </div>
           ))}
           <div ref={chatBottomRef} />
         </div>
 
-        <form onSubmit={handleSendMessage} className={`p-4 border-t ${darkMode ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'} flex items-center gap-3`}>
+        {/* PRÉ-VISUALIZAÇÃO DA IMAGEM ANEXADA */}
+        {attachedImage && (
+          <div className="px-4 py-2 bg-slate-800/90 border-t border-slate-700 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src={attachedImage} alt="Anexo" className="w-10 h-10 object-cover rounded-lg border border-slate-600" />
+              <span className="text-xs text-slate-300 font-medium">Foto selecionada para identificar OEM e NCM</span>
+            </div>
+            <button onClick={() => setAttachedImage(null)} className="p-1 hover:bg-red-500/20 text-red-400 rounded-lg">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* INPUT E BOTÃO DE ANEXO DE FOTO */}
+        <form onSubmit={handleSendMessage} className={`p-4 border-t ${darkMode ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'} flex items-center gap-2`}>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleImageAttach}
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="p-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition-colors"
+            title="Anexar foto da peça ou gravação para descobrir OEM"
+          >
+            <Paperclip className="w-4 h-4 text-amber-400" />
+          </button>
+
           <input
             type="text"
-            placeholder="Digite a dúvida do cliente ou pergunta de compatibilidade..."
+            placeholder="Pergunte sobre a peça, NCM, CEST ou mande uma foto..."
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
             className="flex-1 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-sm text-white focus:outline-none focus:border-amber-400"
           />
+
           <button
             type="submit"
             className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-amber-400/20 transition-transform active:scale-95 flex-shrink-0"
           >
-            <span>Perguntar à IA</span>
+            <span>Consultar IA</span>
             <Send className="w-4 h-4" />
           </button>
         </form>
@@ -906,7 +987,7 @@ function FaqHelperTab({ products, darkMode }) {
 // MÓDULO 6: CURVA ABC DE ESTOQUE (COM FILTRO POR CLIQUE)
 // ==========================================
 function CurvaAbcTab({ products, darkMode }) {
-  const [selectedCurva, setSelectedCurva] = useState('TODAS'); // 'TODAS', 'A', 'B', 'C'
+  const [selectedCurva, setSelectedCurva] = useState('TODAS');
 
   const evaluated = products.map((p, i) => {
     const simulatedRevenue = (p.price || 150) * (p.stock || 5) * (i % 2 === 0 ? 3 : 1);
@@ -965,7 +1046,6 @@ function CurvaAbcTab({ products, darkMode }) {
         )}
       </div>
 
-      {/* CARDS CLICÁVEIS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div
           onClick={() => handleCardClick('A')}
@@ -1016,7 +1096,6 @@ function CurvaAbcTab({ products, darkMode }) {
         </div>
       </div>
 
-      {/* TABELA FILTRADA */}
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
         <div className="p-4 border-b border-slate-800 flex justify-between items-center text-xs text-slate-400 font-semibold">
           <span>Exibindo: <strong className="text-amber-400">{selectedCurva === 'TODAS' ? 'Todas as Peças' : `Apenas Curva ${selectedCurva}`}</strong> ({filteredProducts.length} itens)</span>
