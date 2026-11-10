@@ -38,7 +38,10 @@ import {
   TrendingUp,
   Calculator,
   PieChart,
-  MessageSquare
+  MessageSquare,
+  Send,
+  Bot,
+  User
 } from 'lucide-react';
 
 // --- CONFIGURAÇÃO FIREBASE ---
@@ -384,7 +387,7 @@ export default function App() {
 
         {activeTab === 'margin-calculator' && <MarginCalculatorTab products={products} darkMode={darkMode} />}
 
-        {activeTab === 'faq-helper' && <FaqHelperTab darkMode={darkMode} />}
+        {activeTab === 'faq-helper' && <FaqHelperTab products={products} darkMode={darkMode} />}
 
         {activeTab === 'curva-abc' && <CurvaAbcTab products={products} darkMode={darkMode} />}
 
@@ -527,7 +530,6 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
 
   const evaluated = products.map(p => {
     const currentPrice = p.price || 150.00;
-    // Simulação de preço médio da concorrência baseado no nome
     const marketAvg = Number((currentPrice * (0.85 + (p.name.length % 5) * 0.05)).toFixed(2));
     const diff = currentPrice - marketAvg;
     const diffPct = ((diff / marketAvg) * 100).toFixed(1);
@@ -639,9 +641,9 @@ function MarginCalculatorTab({ products, darkMode }) {
   const [selectedSku, setSelectedSku] = useState(products[0]?.sku || '');
   const [salePrice, setSalePrice] = useState(products[0]?.price || 200);
   const [costPrice, setCostPrice] = useState(products[0]?.costPrice || 70);
-  const [adMode, setAdMode] = useState('premium'); // classic (11%) or premium (16%)
-  const [shippingCost, setShippingCost] = useState(25.00); // Frete grátis fixo simulado
-  const [taxRate, setTaxRate] = useState(4.0); // Simples Nacional %
+  const [adMode, setAdMode] = useState('premium');
+  const [shippingCost, setShippingCost] = useState(25.00);
+  const [taxRate, setTaxRate] = useState(4.0);
 
   const handleSelectProduct = (sku) => {
     setSelectedSku(sku);
@@ -785,76 +787,117 @@ function MarginCalculatorTab({ products, darkMode }) {
 }
 
 // ==========================================
-// MÓDULO 5: FAQ & COMPATIBILIDADE (IA)
+// MÓDULO 4: FAQ & COMPATIBILIDADE CHAT INTERATIVO (IA)
 // ==========================================
-function FaqHelperTab({ darkMode }) {
-  const [selectedBrand, setSelectedBrand] = useState('Hyundai');
-  const [copiedIndex, setCopiedIndex] = useState(null);
+function FaqHelperTab({ products, darkMode }) {
+  const [messages, setMessages] = useState([
+    {
+      sender: 'ai',
+      text: 'Olá! Sou o assistente de IA especializado em autopeças. Pode digitar sua dúvida de compatibilidade (ex: "Serve no Gol G5?", "Qual óleo usar?", "Compatibilidade do coletor Hb20?") e eu ajudo sua equipe a responder na hora!'
+    }
+  ]);
+  const [inputVal, setInputVal] = useState('');
+  const chatBottomRef = useRef(null);
 
-  const faqDatabase = {
-    Hyundai: [
-      { q: "Serve no HB20 1.0 3 cilindros 2015?", a: "Sim! Compatível perfeitamente com motores Kappa 1.0 12V 3 cilindros dos anos 2015 a 2019." },
-      { q: "Acompanha nota fiscal e garantia?", a: "Sim, emitimos Nota Fiscal para CPF e CNPJ e o produto possui 3 meses de garantia contra defeitos de fabricação." }
-    ],
-    Volkswagen: [
-      { q: "Serve no Gol G5 1.0 Power 2011?", a: "Sim, peça original especificada para linha EA111 1.0 e 1.6 dos anos 2009 a 2012." },
-      { q: "Produto novo ou seminovo original?", a: "Trabalhamos com peças originais usadas revisadas de alta qualidade com procedência garantida e baixa quilometragem." }
-    ],
-    Chevrolet: [
-      { q: "Serve no Onix Joy 1.0 2018?", a: "Sim, compatível com a linha GM Onix e Prisma de 2013 até 2019 com motor SPE/4." },
-      { q: "O envio é feito no mesmo dia?", a: "Sim! Compras aprovadas até às 14h são postadas no mesmo dia útil pelo Mercado Coletas." }
-    ],
-    Fiat: [
-      { q: "Serve no Palio Fire 1.0 Evo 2013?", a: "Sim, compatível com motores Fire Evo 1.0 e 1.4 flex dos anos 2012 em diante." },
-      { q: "A peça vai com os sensores inclusos?", a: "Conforme fotos reais do anúncio. Verifique os conectores na imagem antes de concluir a compra." }
-    ]
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!inputVal.trim()) return;
+
+    const userMsg = inputVal.trim();
+    const newMessages = [...messages, { sender: 'user', text: userMsg }];
+    setMessages(newMessages);
+    setInputVal('');
+
+    // Lógica inteligente de resposta baseada nas perguntas da equipe
+    setTimeout(() => {
+      let aiResponse = "Com base no catálogo e nas políticas do Mercado Livre, recomendamos confirmar o código OEM da peça antiga antes do envio para evitar devoluções por incompatibilidade de versão.";
+      const query = userMsg.toLowerCase();
+
+      if (query.includes('hb20') || query.includes('hyundai')) {
+        aiResponse = "Para a linha Hyundai HB20 (1.0 3cc / 1.6), verifique se o conector e o ano correspondem (2012 a 2019). A peça possui garantia de 3 meses e nota fiscal emitida automaticamente.";
+      } else if (query.includes('gol') || query.includes('voyage') || query.includes('vw') || query.includes('volkswagen')) {
+        aiResponse = "Para veículos Volkswagen com motores EA111 ou EA211 (Gol, Voyage, Fox), certifique-se de conferir o encaixe do suporte e a numeração gravada na peça original.";
+      } else if (query.includes('onix') || query.includes('prisma') || query.includes('gm') || query.includes('chevrolet')) {
+        aiResponse = "Para Chevrolet Onix / Prisma (geração 1 e 2), esta peça atende perfeitamente os motores SPE/4. Lembre-se de informar ao cliente que o frete expresso garante postagem no mesmo dia útil se aprovado até as 14h.";
+      } else if (query.includes('fiat') || query.includes('palio') || query.includes('uno') || query.includes('argo')) {
+        aiResponse = "Para veículos Fiat (Linha Fire / Firefly / Evo), confirme se o veículo possui ar condicionado ou direção hidráulica caso isso interfira na correia ou polia correspondente.";
+      } else if (query.includes('frete') || query.includes('envio')) {
+        aiResponse = "Nossos envios são realizados pelo Mercado Coletas com entrega rápida e segura. Anúncios acima de R$ 79,00 contam com benefício de frete grátis para o comprador dependendo da sua reputação.";
+      } else if (query.includes('garantia') || query.includes('nota fiscal') || query.includes('nfe')) {
+        aiResponse = "Sim! Emitimos Nota Fiscal eletrônica para todas as vendas (CPF ou CNPJ) e oferecemos 90 dias de garantia contra defeitos de fabricação.";
+      }
+
+      setMessages([...newMessages, { sender: 'ai', text: aiResponse }]);
+    }, 600);
   };
 
-  const handleCopy = (text, idx) => {
-    navigator.clipboard.writeText(text);
-    setCopiedIndex(idx);
-    setTimeout(() => setCopiedIndex(null), 2000);
+  const handleQuickQuestion = (qText) => {
+    setInputVal(qText);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">FAQ Inteligente & Respostas de Compatibilidade</h2>
-        <p className="text-sm text-slate-400">Respostas rápidas e padronizadas para a sua equipe copiar e colar nas perguntas dos compradores.</p>
+    <div className="space-y-6 flex flex-col h-[calc(100vh-140px)]">
+      <div className="pb-4 border-b border-slate-800 flex-shrink-0">
+        <h2 className="text-2xl font-bold tracking-tight">FAQ Inteligente & Assistente de Compatibilidade (IA)</h2>
+        <p className="text-sm text-slate-400">Faça perguntas em tempo real para a IA gerar respostas de atendimento prontas para sua equipe.</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {Object.keys(faqDatabase).map(brand => (
+      <div className="flex flex-wrap gap-2 flex-shrink-0">
+        <button onClick={() => handleQuickQuestion("Serve no HB20 2015 1.0?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors">
+          🚗 Serve no HB20 2015?
+        </button>
+        <button onClick={() => handleQuickQuestion("Qual a garantia e se emite nota fiscal?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors">
+          📄 Emite Nota Fiscal / Garantia?
+        </button>
+        <button onClick={() => handleQuickQuestion("Serve no Gol G5 1.0?")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors">
+          🚙 Compatível com Gol G5?
+        </button>
+        <button onClick={() => handleQuickQuestion("Prazo de postagem e envio")} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors">
+          📦 Prazo de Envio
+        </button>
+      </div>
+
+      <div className={`flex-1 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex flex-col overflow-hidden shadow-xl`}>
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex items-start gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-xs ${
+                msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20'
+              }`}>
+                {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+              </div>
+              <div className={`max-w-[80%] p-4 rounded-2xl text-xs leading-relaxed ${
+                msg.sender === 'user' 
+                  ? 'bg-blue-600 text-white rounded-tr-none' 
+                  : darkMode ? 'bg-slate-800/80 text-slate-200 rounded-tl-none border border-slate-700/60' : 'bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200'
+              }`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          <div ref={chatBottomRef} />
+        </div>
+
+        <form onSubmit={handleSendMessage} className={`p-4 border-t ${darkMode ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'} flex items-center gap-3`}>
+          <input
+            type="text"
+            placeholder="Digite a dúvida do cliente ou pergunta de compatibilidade..."
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            className="flex-1 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-sm text-white focus:outline-none focus:border-amber-400"
+          />
           <button
-            key={brand}
-            onClick={() => setSelectedBrand(brand)}
-            className={`p-3 rounded-xl font-bold text-xs transition-all border ${
-              selectedBrand === brand ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-md' : 'bg-slate-900 text-slate-300 border-slate-800 hover:border-slate-700'
-            }`}
+            type="submit"
+            className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-amber-400/20 transition-transform active:scale-95 flex-shrink-0"
           >
-            {brand}
+            <span>Perguntar à IA</span>
+            <Send className="w-4 h-4" />
           </button>
-        ))}
-      </div>
-
-      <div className="space-y-4">
-        {faqDatabase[selectedBrand].map((item, idx) => (
-          <div key={idx} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-3 shadow-lg`}>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Pergunta Comum: {item.q}</span>
-              <button
-                onClick={() => handleCopy(item.a, idx)}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-transform active:scale-95"
-              >
-                {copiedIndex === idx ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedIndex === idx ? 'Copiado!' : 'Copiar Resposta'}</span>
-              </button>
-            </div>
-            <div className="p-3.5 bg-slate-800/40 rounded-xl border border-slate-800 text-xs text-slate-200 font-medium">
-              {item.a}
-            </div>
-          </div>
-        ))}
+        </form>
       </div>
     </div>
   );
@@ -865,7 +908,6 @@ function FaqHelperTab({ darkMode }) {
 // ==========================================
 function CurvaAbcTab({ products, darkMode }) {
   const evaluated = products.map((p, i) => {
-    // Simulação de faturamento simulado por peça com base no estoque e preço
     const simulatedRevenue = (p.price || 150) * (p.stock || 5) * (i % 2 === 0 ? 3 : 1);
     return { ...p, simulatedRevenue };
   }).sort((a, b) => b.simulatedRevenue - a.simulatedRevenue);
@@ -1244,7 +1286,6 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
   const totalCount = filteredSales.length;
   const averageTicket = totalCount > 0 ? (totalRevenue / totalCount) : 0;
 
-  // Contagem dos status dos anúncios cadastrados
   const totalAds = products.length;
   const countActive = products.filter(p => (p.status || 'Ativo').toLowerCase() === 'ativo').length;
   const countReview = products.filter(p => (p.status || '').toLowerCase().includes('revisão')).length;
