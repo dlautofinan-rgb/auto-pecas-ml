@@ -32,8 +32,8 @@ import {
   DollarSign,
   ShoppingBag,
   Percent,
-  Cloud,
-  CloudCheck
+  HelpCircle,
+  Info
 } from 'lucide-react';
 
 // --- CONFIGURAÇÃO FIREBASE ---
@@ -55,9 +55,7 @@ const DEFAULT_PRODUCTS = [
 
 const DEFAULT_SALES = [
   { id: 's1', saleId: '3506074', client: 'Italo Ferreira Matos', value: 248.17, discount: 50.83, date: '2026-11-09', payment: 'Transferência Bancária', nfe: '10733' },
-  { id: 's2', saleId: '3499524', client: 'Bruno Joseph de Souza', value: 124.50, discount: 25.50, date: '2026-11-07', payment: 'Cartão de Crédito', nfe: '10725' },
-  { id: 's3', saleId: '3469023', client: 'Vanderson Jacinto Lessa', value: 835.00, discount: 165.00, date: '2026-11-02', payment: 'Cartão de Crédito', nfe: '10626' },
-  { id: 's4', saleId: '3465843', client: 'Wander Lucio Do Carmo', value: 83.00, discount: 17.00, date: '2026-11-01', payment: 'Cartão de Crédito', nfe: '10665' }
+  { id: 's2', saleId: '3499524', client: 'Bruno Joseph de Souza', value: 124.50, discount: 25.50, date: '2026-11-07', payment: 'Cartão de Crédito', nfe: '10725' }
 ];
 
 const DEFAULT_RETURNS = [
@@ -122,12 +120,10 @@ export default function App() {
     return saved ? JSON.parse(saved) : DEFAULT_RETURNS;
   });
 
-  // Inicialização e Sincronização com Firebase Realtime Database
   useEffect(() => {
     const initFirebase = async () => {
       try {
         if (!window.firebase) {
-          // Carregar scripts do Firebase SDK v8 via CDN
           await loadScript('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
           await loadScript('https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js');
         }
@@ -138,8 +134,6 @@ export default function App() {
 
         if (window.firebase) {
           const dbRef = window.firebase.database().ref('mercadolivredl');
-          
-          // Ler dados salvos no Firebase
           dbRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -148,7 +142,6 @@ export default function App() {
               if (data.returnsList) setReturnsList(data.returnsList);
               setFirebaseConnected(true);
             } else {
-              // Se estiver vazio no Firebase, salvar o estado atual
               dbRef.set({ products, salesList, returnsList });
               setFirebaseConnected(true);
             }
@@ -177,7 +170,6 @@ export default function App() {
     });
   };
 
-  // Salvar no Firebase sempre que houver alteração
   useEffect(() => {
     localStorage.setItem('ml_products', JSON.stringify(products));
     localStorage.setItem('ml_sales', JSON.stringify(salesList));
@@ -301,6 +293,7 @@ export default function App() {
             <NavItem id="sales-dashboard" label="Dashboard Faturamento & Vendas" icon={BarChart3} active={activeTab} setActive={setActiveTab} badge={salesList.length} />
             <NavItem id="import" label="Importar Peças & Anúncios" icon={FileSpreadsheet} active={activeTab} setActive={setActiveTab} badge={products.length} />
             <NavItem id="manage-sheets" label="Gerenciar / Excluir Planilhas" icon={Trash2} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="team-guide" label="Guia & Motivos de Status" icon={HelpCircle} active={activeTab} setActive={setActiveTab} />
             <NavItem id="assistant" label="Editor de Títulos (IA)" icon={Sparkles} active={activeTab} setActive={setActiveTab} />
             <NavItem id="categories" label="Editor de Categorias & OEM" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
             <NavItem id="returns" label="Controle Devoluções" icon={RotateCcw} active={activeTab} setActive={setActiveTab} />
@@ -359,6 +352,8 @@ export default function App() {
             darkMode={darkMode} 
           />
         )}
+
+        {activeTab === 'team-guide' && <TeamGuideTab darkMode={darkMode} />}
 
         {activeTab === 'assistant' && <AssistantTab products={products} darkMode={darkMode} />}
 
@@ -459,6 +454,103 @@ function LoginScreen({ onLogin, darkMode, setDarkMode }) {
               Entrar no Sistema
             </button>
           </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// MÓDULO NOVO: GUIA & MOTIVOS DE STATUS (PARA A EQUIPE)
+// ==========================================
+function TeamGuideTab({ darkMode }) {
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">Guia da Equipe: Entendendo os Status dos Anúncios</h2>
+        <p className="text-sm text-slate-400">Material de leitura e alinhamento para a equipe entender por que os anúncios recebem determinadas marcações.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* PAUSADOS */}
+        <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl`}>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-slate-100">Anúncios Pausados</h3>
+              <p className="text-xs text-amber-400">O que significa?</p>
+            </div>
+          </div>
+          <ul className="space-y-2.5 text-xs text-slate-300">
+            <li className="flex items-start gap-2">
+              <span className="text-amber-400 font-bold">•</span>
+              <span><strong>Estoque Zerado:</strong> O Mercado Livre pausa automaticamente quando a quantidade chega a zero.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-400 font-bold">•</span>
+              <span><strong>Falta de Atualização:</strong> Anúncios muito antigos sem vendas ou com alterações nas regras da categoria.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-400 font-bold">•</span>
+              <span><strong>Pausa Manual:</strong> Pausado intencionalmente pela equipe para revisão de preço ou dados.</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* SOB REVISÃO */}
+        <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl`}>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20">
+              <Info className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-slate-100">Sob Revisão</h3>
+              <p className="text-xs text-blue-400">O que significa?</p>
+            </div>
+          </div>
+          <ul className="space-y-2.5 text-xs text-slate-300">
+            <li className="flex items-start gap-2">
+              <span className="text-blue-400 font-bold">•</span>
+              <span><strong>Propriedade Intelectual:</strong> Robôs ou marcas checando se a peça e o título usam nomes de marcas registradas sem autorização.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-400 font-bold">•</span>
+              <span><strong>Verificação de Preço:</strong> Alterações bruscas de valores ou termos proibidos na descrição.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-400 font-bold">•</span>
+              <span><strong>Nota Fiscal:</strong> O ML pode exigir comprovante de procedência e nota fiscal da peça automotiva.</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* FINALIZADOS */}
+        <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl`}>
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-slate-100">Finalizados</h3>
+              <p className="text-xs text-red-400">O que significa?</p>
+            </div>
+          </div>
+          <ul className="space-y-2.5 text-xs text-slate-300">
+            <li className="flex items-start gap-2">
+              <span className="text-red-400 font-bold">•</span>
+              <span><strong>Prazo Expirado:</strong> Anúncios gratuitos que expiraram após o período sem vendas.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-400 font-bold">•</span>
+              <span><strong>Exclusão Permanente:</strong> Anúncio encerrado definitivamente por você ou pela limpeza de estoque.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-400 font-bold">•</span>
+              <span><strong>Infração Grave:</strong> Encerramento definitivo por violação das políticas de produtos proibidos.</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
