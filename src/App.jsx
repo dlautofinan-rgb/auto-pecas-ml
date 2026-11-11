@@ -142,7 +142,6 @@ export default function App() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
-  // Inicialização e sincronização com o Firebase Realtime Database
   useEffect(() => {
     const loadFirebaseSdk = async () => {
       if (!window.firebase) {
@@ -171,7 +170,6 @@ export default function App() {
       const db = window.firebase.database();
       setFirebaseConnected(true);
 
-      // Sincronizar dados em tempo real
       db.ref('masterInventory').on('value', (snapshot) => {
         const val = snapshot.val();
         if (val) setMasterInventory(val);
@@ -223,15 +221,17 @@ export default function App() {
     saveDataToFirebase('returnsList', newList);
   };
 
+  // Função robusta de vínculo com a Base de Estoque Geral por SKU
   const getMasterPriceForSku = (sku) => {
     if (!sku) return null;
-    const found = masterInventory.find(item => String(item.sku).trim() === String(sku).trim());
+    const cleanSku = String(sku).trim();
+    const found = masterInventory.find(item => String(item.sku).trim() === cleanSku);
     return found ? Number(found.price) : null;
   };
 
   const synchronizedProducts = products.map(p => {
     const realPrice = getMasterPriceForSku(p.sku);
-    if (realPrice !== null) {
+    if (realPrice !== null && !isNaN(realPrice)) {
       return {
         ...p,
         price: realPrice,
@@ -505,7 +505,7 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, darkMode }) {
         });
 
         setMasterInventory(imported);
-        setImportStatus(`Sucesso! ${imported.length} itens salvos no Firebase na nuvem[cite: 5].`);
+        setImportStatus(`Sucesso! ${imported.length} itens salvos no Firebase na nuvem[cite: 5]. Preços vinculados.`);
       } catch (err) {
         console.error(err);
         setImportStatus('Erro ao ler a planilha de estoque.');
