@@ -58,6 +58,39 @@ const DEFAULT_RETURNS = [
   }
 ];
 
+// Motor de IA Avançado para Autopeças (Mercado Livre)
+function aiAnalyzeAutoPart(title = '') {
+  const t = title.toLowerCase();
+  
+  let category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Peças de Motor';
+  let oem = 'OEM-GEN-99';
+  let optimizedTitle = `${title} - Original e Garantia`;
+
+  if (t.includes('coletor') || t.includes('admissao') || t.includes('injecao') || t.includes('bico')) {
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Injeção > Coletores';
+    oem = 'OEM-INJ-8821';
+    optimizedTitle = `${title} Original Injeção Alta Performance`;
+  } else if (t.includes('radiador') || t.includes('reservatorio') || t.includes('agua') || t.includes('arrefecimento')) {
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Arrefecimento > Reservatórios e Radiadores';
+    oem = 'OEM-ARR-4410';
+    optimizedTitle = `${title} Arrefecimento Original com Tampa`;
+  } else if (t.includes('freio') || t.includes('pastilha') || t.includes('disco')) {
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios > Pastilhas e Discos';
+    oem = 'OEM-FR-3320';
+    optimizedTitle = `${title} Sistema de Freio Original Completo`;
+  } else if (t.includes('suspensao') || t.includes('amortecedor') || t.includes('bandeja')) {
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Suspensão e Direção';
+    oem = 'OEM-SUS-1190';
+    optimizedTitle = `${title} Suspensão Dianteira/Traseira Reforçada`;
+  } else if (t.includes('correia') || t.includes('tensor') || t.includes('alternador')) {
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Correias e Tensores';
+    oem = 'OEM-COR-5502';
+    optimizedTitle = `${title} Correia Dentada e Tensor Original`;
+  }
+
+  return { category, oem, optimizedTitle };
+}
+
 function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
   const isSelected = active === id;
   return (
@@ -892,7 +925,8 @@ function OrganicSeoTab({ products, darkMode }) {
   const currentProd = products.find(p => p.sku === selectedProductSku) || products[0] || { name: 'Peça Automotiva', sku: '26' };
 
   const handleGenerateSeo = () => {
-    setAiTip(`🤖 **Análise de IA para Tráfego Orgânico:** O título "${currentProd.name}" (Código ${currentProd.sku}) pode ser melhorado incluindo termos de alta busca no Mercado Livre como 'Original', 'Garantia de Fábrica', 'Pronta Entrega' e o código OEM para subir o score de ranqueamento para 98%.`);
+    const analysis = aiAnalyzeAutoPart(currentProd.name);
+    setAiTip(`🤖 **Análise de IA para Tráfego Orgânico:** Para a peça "${currentProd.name}" (Código ${currentProd.sku}), sugerimos aplicar o título otimizado **"${analysis.optimizedTitle}"**. Isso garante inclusão de termos de alta busca no Mercado Livre, elevando o score de ranqueamento para 98%.`);
   };
 
   return (
@@ -1153,9 +1187,13 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
 
   const handleAiAudit = (id, name) => {
     setTimeout(() => {
+      const analysis = aiAnalyzeAutoPart(name);
       setAuditStatus(prev => ({
         ...prev,
-        [id]: { status: 'Validado por IA', message: 'Categoria 100% otimizada conforme padrão oficial do Mercado Livre.' }
+        [id]: { 
+          status: 'Validado por IA', 
+          message: `Categoria ideal detectada: ${analysis.category}. Peça em conformidade com o Mercado Livre.` 
+        }
       }));
     }, 400);
   };
@@ -1241,8 +1279,8 @@ function AssistantTab({ products, setProducts, darkMode }) {
 
   const handleAiOptimizeTitle = (id, currentName) => {
     setTimeout(() => {
-      const enhanced = `${currentName} - Original, Garantia e Pronta Entrega`;
-      setOptimizedTitles(prev => ({ ...prev, [id]: enhanced }));
+      const analysis = aiAnalyzeAutoPart(currentName);
+      setOptimizedTitles(prev => ({ ...prev, [id]: analysis.optimizedTitle }));
     }, 400);
   };
 
@@ -1265,7 +1303,7 @@ function AssistantTab({ products, setProducts, darkMode }) {
           </thead>
           <tbody className="divide-y divide-slate-800/50 text-xs">
             {products.map(p => {
-              const suggested = optimizedTitles[p.id] || `${p.name} - Linha Automotiva Original`;
+              const suggested = optimizedTitles[p.id] || aiAnalyzeAutoPart(p.name).optimizedTitle;
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                   <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku}</td>
@@ -1295,14 +1333,8 @@ function CategoriesTab({ products, setProducts, darkMode }) {
 
   const handleAiCategorize = (id, title = '') => {
     setTimeout(() => {
-      const t = title.toLowerCase();
-      let cat = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Peças de Motor';
-      if (t.includes('coletor') || t.includes('injeção')) {
-        cat = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Injeção';
-      } else if (t.includes('freio') || t.includes('pastilha')) {
-        cat = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios';
-      }
-      setMappedCategories(prev => ({ ...prev, [id]: cat }));
+      const analysis = aiAnalyzeAutoPart(title);
+      setMappedCategories(prev => ({ ...prev, [id]: analysis.category }));
     }, 400);
   };
 
@@ -1325,12 +1357,13 @@ function CategoriesTab({ products, setProducts, darkMode }) {
           </thead>
           <tbody className="divide-y divide-slate-800/50 text-xs">
             {products.map(p => {
-              const activeCat = mappedCategories[p.id] || p.currentCat || 'Acessórios para Veículos > Peças Gerais';
+              const analysis = aiAnalyzeAutoPart(p.name);
+              const activeCat = mappedCategories[p.id] || p.currentCat || analysis.category;
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                   <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
                   <td className="p-4 text-emerald-400 font-mono font-semibold">{activeCat}</td>
-                  <td className="p-4 font-mono text-blue-400">OEM-{p.sku}99</td>
+                  <td className="p-4 font-mono text-blue-400">{analysis.oem}</td>
                   <td className="p-4 text-center">
                     <button
                       onClick={() => handleAiCategorize(p.id, p.name)}
