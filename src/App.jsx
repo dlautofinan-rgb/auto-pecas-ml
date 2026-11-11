@@ -41,20 +41,7 @@ const DEFAULT_PRODUCTS = [
   }
 ];
 
-const DEFAULT_SALES = [
-  {
-    id: 'sale_1',
-    saleId: '2000001',
-    client: 'Oficina Mecânica Silva',
-    value: 360.00,
-    discount: 20.00,
-    date: '2026-11-10',
-    payment: 'Pix',
-    nfe: '001245',
-    trackingCode: 'BR987654321X',
-    trackingStatus: 'Em Trânsito'
-  }
-];
+const DEFAULT_SALES = [];
 
 const DEFAULT_RETURNS = [
   {
@@ -373,9 +360,9 @@ export default function App() {
 
         {activeTab === 'team-guide' && <TeamGuideTab darkMode={darkMode} />}
 
-        {activeTab === 'assistant' && <AssistantTab products={synchronizedProducts} darkMode={darkMode} />}
+        {activeTab === 'assistant' && <AssistantTab products={synchronizedProducts} setProducts={setProducts} darkMode={darkMode} />}
 
-        {activeTab === 'categories' && <CategoriesTab products={synchronizedProducts} darkMode={darkMode} />}
+        {activeTab === 'categories' && <CategoriesTab products={synchronizedProducts} setProducts={setProducts} darkMode={darkMode} />}
 
         {activeTab === 'returns' && <ReturnsTab returnsList={returnsList} setReturnsList={setReturnsList} products={synchronizedProducts} currentUser={currentUser} darkMode={darkMode} />}
 
@@ -939,6 +926,10 @@ function FaqHelperTab({ products, darkMode }) {
         <h2 className="text-2xl font-bold tracking-tight">FAQ, SAC ML & Estoque Crítico</h2>
         <p className="text-sm text-slate-400">Assistente de IA para respostas automáticas e controle de estoque.</p>
       </div>
+      <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4`}>
+        <h3 className="font-bold text-amber-400">Perguntas Frequentes (FAQ Automático Mercado Livre)</h3>
+        <p className="text-xs text-slate-400">Aqui você pode consultar respostas rápidas para os clientes sobre compatibilidade e aplicação de peças.</p>
+      </div>
     </div>
   );
 }
@@ -963,7 +954,7 @@ function CurvaAbcTab({ products, darkMode }) {
           <tbody className="divide-y divide-slate-800/50 text-xs">
             {products.map(p => (
               <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku}</td>
+                <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
                 <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
                 <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
                 <td className="p-4 text-center"><span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full font-bold">Curva A</span></td>
@@ -983,6 +974,26 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
         <h2 className="text-2xl font-bold tracking-tight">Auditoria e Comparação de Categorias</h2>
         <p className="text-sm text-slate-400">Verifique se suas peças estão nas categorias corretas exigidas pelo Mercado Livre.</p>
       </div>
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
+            <tr>
+              <th className="p-4">Código / Peça</th>
+              <th className="p-4">Categoria Atual</th>
+              <th className="p-4 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/50 text-xs">
+            {products.map(p => (
+              <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
+                <td className="p-4 font-mono text-slate-300">{p.currentCat || 'Acessórios para Veículos > Peças Gerais'}</td>
+                <td className="p-4 text-center"><span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full font-bold">Auditor OK</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -993,6 +1004,75 @@ function TeamGuideTab({ darkMode }) {
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Guia da Equipe: Entendendo os Status dos Anúncios</h2>
         <p className="text-sm text-slate-400">Material de leitura para a equipe.</p>
+      </div>
+      <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 text-xs leading-relaxed`}>
+        <h3 className="font-bold text-base text-amber-400">Significado dos Status no Mercado Livre</h3>
+        <p>• <strong>Ativo:</strong> O anúncio está visível e pronto para receber vendas.</p>
+        <p>• <strong>Sob Revisão:</strong> O Mercado Livre está analisando o título, fotos ou compatibilidade da peça.</p>
+        <p>• <strong>Pausado:</strong> O estoque zerou ou o anúncio foi pausado manualmente.</p>
+        <p>• <strong>Finalizado:</strong> O anúncio foi encerrado definitivamente.</p>
+      </div>
+    </div>
+  );
+}
+
+function AssistantTab({ products, setProducts, darkMode }) {
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">Editor de Títulos (Automático)</h2>
+        <p className="text-sm text-slate-400">Verifique e otimize os títulos importados.</p>
+      </div>
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
+            <tr>
+              <th className="p-4">Código / Peça</th>
+              <th className="p-4">Título Atual</th>
+              <th className="p-4">Título Sugerido (SEO)</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/50 text-xs">
+            {products.map(p => (
+              <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku}</td>
+                <td className="p-4 font-semibold text-slate-200">{p.name}</td>
+                <td className="p-4 font-mono text-emerald-400 font-bold">{p.name} - Original e Garantido</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function CategoriesTab({ products, setProducts, darkMode }) {
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">Editor de Categorias & OEM</h2>
+        <p className="text-sm text-slate-400">Mapeamento para as categorias do Mercado Livre.</p>
+      </div>
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
+            <tr>
+              <th className="p-4">Código / Peça</th>
+              <th className="p-4">Categoria Atribuída</th>
+              <th className="p-4">Código OEM</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/50 text-xs">
+            {products.map(p => (
+              <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
+                <td className="p-4 text-slate-300 font-mono">{p.currentCat || 'Acessórios para Veículos > Peças Gerais'}</td>
+                <td className="p-4 font-mono text-blue-400">OEM-{p.sku}99</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -1063,6 +1143,12 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
       }
     };
     reader.readAsArrayBuffer(file);
+  };
+
+  const handleDeleteSale = (id) => {
+    if (window.confirm('Deseja realmente apagar este registro de venda?')) {
+      setSalesList(salesList.filter(s => s.id !== id));
+    }
   };
 
   const filteredSales = salesList.filter(s => {
@@ -1142,17 +1228,33 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
                 <th className="p-4">Cliente</th>
                 <th className="p-4">Rastreio</th>
                 <th className="p-4 text-right">Valor</th>
+                <th className="p-4 text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
-              {filteredSales.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-4 font-mono font-bold text-amber-400">ID: {s.saleId}</td>
-                  <td className="p-4 font-semibold text-slate-200">{s.client}</td>
-                  <td className="p-4 font-mono text-blue-400">{s.trackingCode}</td>
-                  <td className="p-4 text-right font-mono font-bold text-emerald-400">R$ {s.value.toFixed(2)}</td>
+              {filteredSales.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="p-8 text-center text-slate-500">Nenhuma venda registrada ou importada.</td>
                 </tr>
-              ))}
+              ) : (
+                filteredSales.map((s) => (
+                  <tr key={s.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="p-4 font-mono font-bold text-amber-400">ID: {s.saleId}</td>
+                    <td className="p-4 font-semibold text-slate-200">{s.client}</td>
+                    <td className="p-4 font-mono text-blue-400">{s.trackingCode}</td>
+                    <td className="p-4 text-right font-mono font-bold text-emerald-400">R$ {s.value.toFixed(2)}</td>
+                    <td className="p-4 text-center">
+                      <button 
+                        onClick={() => handleDeleteSale(s.id)} 
+                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors border border-red-500/20"
+                        title="Apagar Venda"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -1352,28 +1454,6 @@ function ManageSheetsTab({ products, onDeleteSheet, currentUser, darkMode }) {
   );
 }
 
-function AssistantTab({ products, darkMode }) {
-  return (
-    <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Editor de Títulos (Automático)</h2>
-        <p className="text-sm text-slate-400">Verifique os títulos importados.</p>
-      </div>
-    </div>
-  );
-}
-
-function CategoriesTab({ products, darkMode }) {
-  return (
-    <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Editor de Categorias & OEM</h2>
-        <p className="text-sm text-slate-400">Mapeamento para as categorias do Mercado Livre.</p>
-      </div>
-    </div>
-  );
-}
-
 function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -1532,6 +1612,11 @@ function PhotoEditorTab({ darkMode }) {
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Editor de Fotos (Fundo Branco)</h2>
         <p className="text-sm text-slate-400">Adeque suas fotos aos padrões do Mercado Livre.</p>
+      </div>
+      <div className={`p-8 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} text-center space-y-4`}>
+        <ImageIcon className="w-12 h-12 text-amber-400 mx-auto" />
+        <h3 className="font-bold text-base">Remoção Automática de Fundo para Peças</h3>
+        <p className="text-xs text-slate-400 max-w-md mx-auto">Arraste as fotos das suas peças automotivas aqui para remover o fundo e deixá-las com fundo branco puro exigido pelo Mercado Livre.</p>
       </div>
     </div>
   );
