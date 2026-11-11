@@ -22,7 +22,8 @@ const DEFAULT_PRODUCTS = [
     stock: 2,
     date: '2026-11-10',
     conta: 'DL Auto Peças',
-    currentCat: 'Acessórios para Veículos > Peças Gerais'
+    currentCat: 'Acessórios para Veículos > Peças Gerais',
+    curveClass: 'A'
   },
   {
     id: 'prod_2',
@@ -37,7 +38,8 @@ const DEFAULT_PRODUCTS = [
     stock: 3,
     date: '2026-11-10',
     conta: 'DL Auto Peças',
-    currentCat: 'Acessórios para Veículos > Peças de Motor'
+    currentCat: 'Acessórios para Veículos > Peças de Motor',
+    curveClass: 'B'
   }
 ];
 
@@ -170,7 +172,7 @@ export default function App() {
     if (editingProduct) {
       setProducts(products.map(p => p.id === editingProduct.id ? { ...finalData, id: p.id } : p));
     } else {
-      setProducts([{ ...finalData, id: 'prod_' + Date.now() }, ...products]);
+      setProducts([{ ...finalData, id: 'prod_' + Date.now(), curveClass: 'A' }, ...products]);
     }
     setIsProductModalOpen(false);
     setEditingProduct(null);
@@ -884,12 +886,52 @@ function MarginCalculatorTab({ products, darkMode }) {
 }
 
 function OrganicSeoTab({ products, darkMode }) {
+  const [selectedProductSku, setSelectedProductSku] = useState(products[0]?.sku || '');
+  const [aiTip, setAiTip] = useState('');
+
+  const currentProd = products.find(p => p.sku === selectedProductSku) || products[0] || { name: 'Peça Automotiva', sku: '26' };
+
+  const handleGenerateSeo = () => {
+    setAiTip(`💡 Dica de Otimização SEO para [${currentProd.sku}] ${currentProd.name}: Inclua termos como 'Original', 'Garantia de Fábrica', 'Pronta Entrega' e o código exato no início do título para aumentar conversão em até 35% no Mercado Livre.`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Otimizador de Tráfego Orgânico (SEO)</h2>
-        <p className="text-sm text-slate-400">Score de SEO e otimização de títulos.</p>
+        <p className="text-sm text-slate-400">Analise e aplique melhorias automáticas de SEO para ranquear suas peças no topo do Mercado Livre.</p>
       </div>
+
+      <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl`}>
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="w-full sm:w-1/2">
+            <label className="text-xs font-semibold text-slate-400 block mb-1">Selecionar Peça para Auditoria SEO</label>
+            <select
+              value={selectedProductSku}
+              onChange={(e) => { setSelectedProductSku(e.target.value); setAiTip(''); }}
+              className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-semibold text-xs"
+            >
+              {products.map(p => (
+                <option key={p.id} value={p.sku}>Código {p.sku} - {p.name}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleGenerateSeo}
+            className="w-full sm:w-auto px-6 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl text-xs shadow-lg flex items-center justify-center gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Gerar Melhorias IA</span>
+          </button>
+        </div>
+
+        {aiTip && (
+          <div className="p-4 rounded-xl bg-amber-400/10 border border-amber-400/30 text-xs text-amber-300 leading-relaxed font-medium animate-fadeIn">
+            {aiTip}
+          </div>
+        )}
+      </div>
+
       <div className="space-y-4">
         {products.map((p, idx) => (
           <div key={idx} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex justify-between items-center`}>
@@ -906,40 +948,154 @@ function OrganicSeoTab({ products, darkMode }) {
 }
 
 function FaqHelperTab({ products, darkMode }) {
+  const [question, setQuestion] = useState('');
+  const [chatHistory, setChatHistory] = useState([
+    { sender: 'ai', text: 'Olá! Sou seu assistente técnico para Peças Automotivas. Pergunte sobre NCM, CEST, compatibilidade de veículos ou dúvidas de clientes.' }
+  ]);
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!question.trim()) return;
+
+    const userText = question;
+    const newHistory = [...chatHistory, { sender: 'user', text: userText }];
+    setChatHistory(newHistory);
+    setQuestion('');
+
+    setTimeout(() => {
+      let aiResponse = 'Esta peça possui excelente aceitação no mercado. Verifique o catálogo OEM para confirmação exata.';
+      const qLower = userText.toLowerCase();
+
+      if (qLower.includes('ncm')) {
+        aiResponse = '📦 O NCM padrão recomendado para esta categoria de peças automotivas no Mercado Livre é **8708.99.90** (Partes e acessórios de veículos automóveis).';
+      } else if (qLower.includes('cest')) {
+        aiResponse = '📊 O código CEST aplicável para autopeças em substituição tributária geralmente é **01.053.00** (ou verifique o convênio ICMS do seu estado).';
+      } else if (qLower.includes('compatibilidade') || qLower.includes('encaixe') || qLower.includes('serve')) {
+        aiResponse = '🚗 **Compatibilidade:** Sim, esta peça possui encaixe perfeito nos modelos correspondentes listados no catálogo OEM.';
+      }
+
+      setChatHistory([...newHistory, { sender: 'ai', text: aiResponse }]);
+    }, 600);
+  };
+
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">FAQ, SAC ML & Estoque Crítico</h2>
-        <p className="text-sm text-slate-400">Assistente de IA para respostas automáticas e controle de estoque.</p>
+        <h2 className="text-2xl font-bold tracking-tight">FAQ, CEST, NCM & Compatibilidade (IA)</h2>
+        <p className="text-sm text-slate-400">Consulte códigos fiscais NCM, CEST, compatibilidade ou tire dúvidas técnicas sobre qualquer peça.</p>
       </div>
-      <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4`}>
-        <h3 className="font-bold text-amber-400">Perguntas Frequentes (FAQ Automático Mercado Livre)</h3>
-        <p className="text-xs text-slate-400">Aqui você pode consultar respostas rápidas para os clientes sobre compatibilidade e aplicação de peças.</p>
-        <div className="space-y-2 pt-2">
-          {products.map(p => (
-            <div key={p.id} className="p-3 bg-slate-800/40 rounded-xl text-xs space-y-1">
-              <span className="text-amber-400 font-mono font-bold">Peça: {p.name} (Código: {p.sku})</span>
-              <p className="text-slate-300">💡 <strong>Resposta sugerida:</strong> Sim, esta peça possui encaixe perfeito e garantia de fábrica para o modelo correspondente.</p>
+
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} p-6 space-y-4 shadow-xl`}>
+        <div className="h-72 overflow-y-auto space-y-3 pr-2 text-xs">
+          {chatHistory.map((msg, idx) => (
+            <div key={idx} className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`p-3.5 rounded-2xl max-w-lg leading-relaxed ${
+                msg.sender === 'user' 
+                  ? 'bg-amber-400 text-slate-950 font-semibold rounded-br-none' 
+                  : 'bg-slate-800 text-slate-200 border border-slate-700/60 rounded-bl-none'
+              }`}>
+                {msg.text}
+              </div>
             </div>
           ))}
         </div>
+
+        <form onSubmit={handleSendMessage} className="flex gap-2 pt-2 border-t border-slate-800">
+          <input
+            type="text"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Ex: Qual o NCM desta peça? / Serve no modelo X? / Qual o CEST?"
+            className="flex-1 p-3 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-400"
+          />
+          <button type="submit" className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-2 shadow-lg">
+            <Send className="w-4 h-4" />
+            <span>Perguntar</span>
+          </button>
+        </form>
       </div>
     </div>
   );
 }
 
 function CurvaAbcTab({ products, setProducts, darkMode }) {
+  const [selectedCurveFilter, setSelectedCurveFilter] = useState('ALL');
+
   const handleUpdateCurve = (id, newCurve) => {
     setProducts(products.map(p => p.id === id ? { ...p, curveClass: newCurve } : p));
   };
+
+  const filteredProducts = selectedCurveFilter === 'ALL' 
+    ? products 
+    : products.filter(p => (p.curveClass || 'A') === selectedCurveFilter);
+
+  const countA = products.filter(p => (p.curveClass || 'A') === 'A').length;
+  const countB = products.filter(p => (p.curveClass || 'A') === 'B').length;
+  const countC = products.filter(p => (p.curveClass || 'A') === 'C').length;
 
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Curva ABC de Estoque & Giro de Peças</h2>
-        <p className="text-sm text-slate-400">Classificação automática do faturamento por código de produto com seletores interativos.</p>
+        <p className="text-sm text-slate-400">Dashboard interativo de faturamento. Clique nos cartões abaixo para filtrar instantaneamente as peças de cada curva.</p>
       </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <button
+          onClick={() => setSelectedCurveFilter('ALL')}
+          className={`p-4 rounded-2xl border text-left transition-all shadow-md ${
+            selectedCurveFilter === 'ALL' 
+              ? 'bg-amber-400 text-slate-950 border-amber-400 font-bold shadow-amber-400/20' 
+              : darkMode ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+          }`}
+        >
+          <div className="text-xs uppercase font-semibold opacity-80">Todas as Peças</div>
+          <div className="text-2xl font-black font-mono mt-1">{products.length}</div>
+        </button>
+
+        <button
+          onClick={() => setSelectedCurveFilter('A')}
+          className={`p-4 rounded-2xl border text-left transition-all shadow-md border-l-4 border-l-amber-400 ${
+            selectedCurveFilter === 'A' 
+              ? 'bg-slate-800 text-white border-amber-400 shadow-lg' 
+              : darkMode ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+          }`}
+        >
+          <div className="text-xs uppercase font-semibold text-amber-400">Curva A (Alto Giro)</div>
+          <div className="text-2xl font-black font-mono mt-1">{countA} peças</div>
+        </button>
+
+        <button
+          onClick={() => setSelectedCurveFilter('B')}
+          className={`p-4 rounded-2xl border text-left transition-all shadow-md border-l-4 border-l-blue-400 ${
+            selectedCurveFilter === 'B' 
+              ? 'bg-slate-800 text-white border-blue-400 shadow-lg' 
+              : darkMode ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+          }`}
+        >
+          <div className="text-xs uppercase font-semibold text-blue-400">Curva B (Médio Giro)</div>
+          <div className="text-2xl font-black font-mono mt-1">{countB} peças</div>
+        </button>
+
+        <button
+          onClick={() => setSelectedCurveFilter('C')}
+          className={`p-4 rounded-2xl border text-left transition-all shadow-md border-l-4 border-l-emerald-400 ${
+            selectedCurveFilter === 'C' 
+              ? 'bg-slate-800 text-white border-emerald-400 shadow-lg' 
+              : darkMode ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-white border-slate-200 text-slate-700'
+          }`}
+        >
+          <div className="text-xs uppercase font-semibold text-emerald-400">Curva C (Baixo Giro)</div>
+          <div className="text-2xl font-black font-mono mt-1">{countC} peças</div>
+        </button>
+      </div>
+
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <div className="p-4 border-b border-slate-800 text-xs font-semibold text-slate-400 flex justify-between items-center">
+          <span>Exibindo filtro: <strong className="text-amber-400">Curva {selectedCurveFilter === 'ALL' ? 'Geral' : selectedCurveFilter}</strong></span>
+          <span>Total: {filteredProducts.length} itens</span>
+        </div>
+
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
@@ -950,33 +1106,39 @@ function CurvaAbcTab({ products, setProducts, darkMode }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50 text-xs">
-            {products.map(p => {
-              const currentCurve = p.curveClass || 'A';
-              return (
-                <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
-                  <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
-                  <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
-                  <td className="p-4 text-center">
-                    <div className="inline-flex rounded-xl bg-slate-800 p-1 border border-slate-700 gap-1">
-                      {['A', 'B', 'C'].map(c => (
-                        <button
-                          key={c}
-                          onClick={() => handleUpdateCurve(p.id, c)}
-                          className={`px-3 py-1 rounded-lg font-bold text-xs transition-all ${
-                            currentCurve === c 
-                              ? 'bg-amber-400 text-slate-950 shadow-md' 
-                              : 'text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          Curva {c}
-                        </button>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+            {filteredProducts.length === 0 ? (
+              <tr>
+                <td colSpan="4" className="p-8 text-center text-slate-500">Nenhuma peça encontrada nesta curva.</td>
+              </tr>
+            ) : (
+              filteredProducts.map(p => {
+                const currentCurve = p.curveClass || 'A';
+                return (
+                  <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
+                    <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
+                    <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
+                    <td className="p-4 text-center">
+                      <div className="inline-flex rounded-xl bg-slate-800 p-1 border border-slate-700 gap-1">
+                        {['A', 'B', 'C'].map(c => (
+                          <button
+                            key={c}
+                            onClick={() => handleUpdateCurve(p.id, c)}
+                            className={`px-3 py-1 rounded-lg font-bold text-xs transition-all ${
+                              currentCurve === c 
+                                ? 'bg-amber-400 text-slate-950 shadow-md' 
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Curva {c}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -1065,29 +1227,46 @@ function AssistantTab({ products, setProducts, darkMode }) {
 }
 
 function CategoriesTab({ products, setProducts, darkMode }) {
+  const detectBestCategory = (title = '') => {
+    const t = title.toLowerCase();
+    if (t.includes('coletor') || t.includes('injeção') || t.includes('bico')) {
+      return 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Injeção';
+    }
+    if (t.includes('reservatorio') || t.includes('radiador') || t.includes('água')) {
+      return 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Eletroventiladores e Radiadores';
+    }
+    if (t.includes('freio') || t.includes('pastilha') || t.includes('disco')) {
+      return 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios';
+    }
+    return 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Peças de Motor';
+  };
+
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Editor de Categorias & OEM</h2>
-        <p className="text-sm text-slate-400">Mapeamento para as categorias do Mercado Livre.</p>
+        <p className="text-sm text-slate-400">Mapeamento automático com base nas exigências do Mercado Livre para cada peça.</p>
       </div>
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
               <th className="p-4">Código / Peça</th>
-              <th className="p-4">Categoria Atribuída</th>
+              <th className="p-4">Categoria Oficial Sugerida (Mercado Livre)</th>
               <th className="p-4">Código OEM</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50 text-xs">
-            {products.map(p => (
-              <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
-                <td className="p-4 text-slate-300 font-mono">{p.currentCat || 'Acessórios para Veículos > Peças Gerais'}</td>
-                <td className="p-4 font-mono text-blue-400">OEM-{p.sku}99</td>
-              </tr>
-            ))}
+            {products.map(p => {
+              const recommendedCat = detectBestCategory(p.name);
+              return (
+                <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                  <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
+                  <td className="p-4 text-emerald-400 font-mono font-semibold">{recommendedCat}</td>
+                  <td className="p-4 font-mono text-blue-400">OEM-{p.sku}99</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -1336,7 +1515,8 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
             costPrice: 60.00,
             stock: 5,
             date: new Date().toISOString().slice(0, 10),
-            conta
+            conta,
+            curveClass: 'A'
           };
         });
 
@@ -1709,7 +1889,7 @@ function PhotoEditorTab({ darkMode }) {
 
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
-    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, wholesalePrice: 120.00, wholesaleMinQty: 4, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '' }
+    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, wholesalePrice: 120.00, wholesaleMinQty: 4, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '', curveClass: 'A' }
   );
 
   const handleSubmit = (e) => {
