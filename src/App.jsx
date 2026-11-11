@@ -219,7 +219,7 @@ export default function App() {
     saveDataToFirebase('returnsList', newList);
   };
 
-  // Vínculo robusto buscando na base geral de estoque por SKU
+  // Vínculo flexível: se encontrar na base geral usa o preço de lá, senão mantém o preço original da peça sem forçar 150
   const getMasterPriceForSku = (sku) => {
     if (!sku) return null;
     const cleanSku = String(sku).trim().toLowerCase();
@@ -229,14 +229,12 @@ export default function App() {
 
   const synchronizedProducts = products.map(p => {
     const realPrice = getMasterPriceForSku(p.sku);
-    if (realPrice !== null && !isNaN(realPrice) && realPrice > 0) {
-      return {
-        ...p,
-        price: realPrice,
-        wholesalePrice: Number((realPrice * 0.85).toFixed(2))
-      };
-    }
-    return p;
+    const basePrice = realPrice !== null && !isNaN(realPrice) && realPrice > 0 ? realPrice : (Number(p.price) || 0);
+    return {
+      ...p,
+      price: basePrice,
+      wholesalePrice: Number((basePrice * 0.85).toFixed(2))
+    };
   });
 
   const handleLogout = () => {
@@ -257,8 +255,8 @@ export default function App() {
     const realPrice = getMasterPriceForSku(formData.sku) || formData.price;
     const finalData = {
       ...formData,
-      price: realPrice,
-      wholesalePrice: Number((realPrice * 0.85).toFixed(2))
+      price: Number(realPrice),
+      wholesalePrice: Number((Number(realPrice) * 0.85).toFixed(2))
     };
 
     let updated;
@@ -506,8 +504,8 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
           const sku = String(row['Código'] || row['Codigo'] || row['SKU'] || row['sku'] || `SKU_${idx}`);
           const name = String(row['Produto'] || row['produto'] || row['Título'] || row['Nome'] || 'Peça Automotiva');
           
-          const rawPrice = row['Valor Venda (R$)'] || row['Valor Venda'] || row['Preço'] || row['Preco'] || row['Valor'] || 150.00;
-          const price = Number(String(rawPrice).replace('R$', '').replace(',', '.')) || 150.00;
+          const rawPrice = row['Valor Venda (R$)'] || row['Valor Venda'] || row['Preço'] || row['Preco'] || row['Valor'] || 0;
+          const price = Number(String(rawPrice).replace('R$', '').replace(',', '.')) || 0;
 
           const rawCost = row['Custo (R$)'] || row['Custo'] || 0.01;
           const costPrice = Number(String(rawCost).replace('R$', '').replace(',', '.')) || 0.01;
@@ -1692,8 +1690,8 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           const status = String(row['Status'] || 'Ativo');
           const conta = String(row['Conta'] || 'DL Auto Peças');
           
-          const rawPrice = row['Valor Venda (R$)'] || row['Preço'] || row['Preco'] || row['Valor'] || 150.00;
-          const price = Number(String(rawPrice).replace('R$', '').replace(',', '.')) || 150.00;
+          const rawPrice = row['Valor Venda (R$)'] || row['Preço'] || row['Preco'] || row['Valor'] || 0;
+          const price = Number(String(rawPrice).replace('R$', '').replace(',', '.')) || 0;
 
           return {
             id: 'imp_' + Date.now() + '_' + idx,
@@ -1774,7 +1772,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
                     <div className="text-slate-500">MLB: {p.mlb || 'N/D'}</div>
                   </td>
                   <td className="p-4 font-semibold text-slate-200">{p.name}</td>
-                  <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
+                  <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 0).toFixed(2)}</td>
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button onClick={() => onEditProduct(p)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
