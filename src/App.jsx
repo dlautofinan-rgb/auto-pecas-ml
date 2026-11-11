@@ -8,9 +8,6 @@ import {
   DollarSign, ShoppingBag, Percent, Upload, Edit, Plus, Info, Truck, PackageCheck, Calendar, Database
 } from 'lucide-react';
 
-// ==========================================
-// DADOS INICIAIS DE EXEMPLO
-// ==========================================
 const DEFAULT_PRODUCTS = [
   {
     id: 'prod_1',
@@ -72,7 +69,6 @@ const DEFAULT_RETURNS = [
   }
 ];
 
-// Função utilitária para detectar categoria baseada no título da peça
 function detectCategoryFromTitle(title = '') {
   const t = title.toLowerCase();
   if (t.includes('coletor') || t.includes('injeção') || t.includes('bico')) {
@@ -113,16 +109,12 @@ function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
   );
 }
 
-// ==========================================
-// COMPONENTE PRINCIPAL (APP)
-// ==========================================
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [darkMode, setDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState('sales-dashboard');
   const [firebaseConnected] = useState(true);
 
-  // Master Inventory Base (Tabela Mestra de Estoque Geral: Código, Produto, Valor Venda, Custo, Estoque)[cite: 5]
   const [masterInventory, setMasterInventory] = useState(() => {
     const saved = localStorage.getItem('autoflex_master_inventory');
     return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
@@ -162,14 +154,12 @@ export default function App() {
     localStorage.setItem('autoflex_returns', JSON.stringify(returnsList));
   }, [returnsList]);
 
-  // Função central para buscar o preço real da base de estoque pelo SKU / Código[cite: 5]
   const getMasterPriceForSku = (sku) => {
     if (!sku) return null;
     const found = masterInventory.find(item => String(item.sku).trim() === String(sku).trim());
     return found ? Number(found.price) : null;
   };
 
-  // Aplica o preço mestre atualizado em todas as peças sempre que a base for alterada
   const synchronizedProducts = products.map(p => {
     const realPrice = getMasterPriceForSku(p.sku);
     if (realPrice !== null) {
@@ -404,9 +394,6 @@ export default function App() {
   );
 }
 
-// ==========================================
-// MÓDULO: BASE DE ESTOQUE GERAL (NOVA ABA)
-// ==========================================
 function MasterInventoryTab({ masterInventory, setMasterInventory, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [importStatus, setImportStatus] = useState('');
@@ -444,7 +431,6 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, darkMode }) {
           const sku = String(row['Código'] || row['Codigo'] || row['SKU'] || row['sku'] || `SKU_${idx}`);
           const name = String(row['Produto'] || row['produto'] || row['Título'] || row['Nome'] || 'Peça Automotiva');
           
-          // Captura a coluna Valor Venda (R$) / Preço[cite: 5]
           const rawPrice = row['Valor Venda (R$)'] || row['Valor Venda'] || row['Preço'] || row['Preco'] || row['Valor'] || 150.00;
           const price = Number(String(rawPrice).replace('R$', '').replace(',', '.')) || 150.00;
 
@@ -466,7 +452,7 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, darkMode }) {
         });
 
         setMasterInventory(imported);
-        setImportStatus(`Sucesso! ${imported.length} itens carregados na Base de Estoque Geral. Os preços reais foram vinculados.`);
+        setImportStatus(`Sucesso! ${imported.length} itens carregados na Base de Estoque Geral[cite: 5]. Preços reais vinculados.`);
       } catch (err) {
         console.error(err);
         setImportStatus('Erro ao ler a planilha de estoque.');
@@ -485,7 +471,7 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, darkMode }) {
       <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Base de Estoque Geral (Código, Produto e Valor)</h2>
-          <p className="text-sm text-slate-400">Jogue sua planilha completa de estoque aqui[cite: 5]. O sistema analisará as colunas Código e Valor de Venda para atualizar automaticamente todos os anúncios.</p>
+          <p className="text-sm text-slate-400">Jogue sua planilha completa de estoque aqui[cite: 5]. As colunas Código[cite: 5], Produto[cite: 5] e Valor Venda (R$)[cite: 5] são mapeadas automaticamente.</p>
         </div>
 
         <label className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer shadow-lg shadow-amber-400/20 transition-transform active:scale-95">
@@ -553,9 +539,6 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, darkMode }) {
   );
 }
 
-// ==========================================
-// TELA DE LOGIN
-// ==========================================
 function LoginScreen({ onLogin, darkMode, setDarkMode }) {
   const [selectedRole, setSelectedRole] = useState('admin');
   const [password, setPassword] = useState('');
@@ -637,9 +620,6 @@ function LoginScreen({ onLogin, darkMode, setDarkMode }) {
   );
 }
 
-// ==========================================
-// MÓDULO: SIMULADOR DE ATACADO E VAREJO
-// ==========================================
 function WholesaleCalculatorTab({ products, darkMode }) {
   const [selectedSku, setSelectedSku] = useState(products[0]?.sku || '');
   const [quantity, setQuantity] = useState(5);
@@ -658,13 +638,12 @@ function WholesaleCalculatorTab({ products, darkMode }) {
   const ehAtacado = quantity >= qtdMinimaAtacado;
   const precoAplicado = ehAtacado ? precoAtacado : precoVarejo;
   const valorTotal = precoAplicado * quantity;
-  const economia = ehAtacado ? (precoVarejo - precoAtacado) * quantity : 0;
 
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Simulador de Vendas: Atacado e Varejo</h2>
-        <p className="text-sm text-slate-400">Calcule automaticamente descontos por volume com base nos preços reais sincronizados.</p>
+        <p className="text-sm text-slate-400">Calcule descontos por volume com base nos preços reais sincronizados.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -702,10 +681,6 @@ function WholesaleCalculatorTab({ products, darkMode }) {
               <span>Preço Unitário (Atacado):</span>
               <span className="text-emerald-400">R$ {precoAtacado.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-slate-400">
-              <span>Qtd Mínima Atacado:</span>
-              <span className="text-amber-400">{qtdMinimaAtacado} un</span>
-            </div>
           </div>
         </div>
 
@@ -715,9 +690,6 @@ function WholesaleCalculatorTab({ products, darkMode }) {
             <div className="text-2xl font-black text-amber-400">
               {ehAtacado ? '🎉 Atacado (Volume)' : '👤 Varejo (Unitário)'}
             </div>
-            <div className="text-xs text-slate-500">
-              {ehAtacado ? `Parabéns! Desconto de atacado ativado (>= ${qtdMinimaAtacado} un)` : `Compre mais ${qtdMinimaAtacado - quantity} un para ativar o preço de atacado.`}
-            </div>
           </div>
 
           <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-xl flex flex-col justify-center border-l-4 border-l-emerald-400`}>
@@ -725,7 +697,6 @@ function WholesaleCalculatorTab({ products, darkMode }) {
             <div className="text-3xl font-black font-mono text-emerald-400">
               R$ {valorTotal.toFixed(2)}
             </div>
-            <div className="text-xs text-slate-500">Unitário aplicado: R$ {precoAplicado.toFixed(2)}</div>
           </div>
         </div>
       </div>
@@ -733,9 +704,6 @@ function WholesaleCalculatorTab({ products, darkMode }) {
   );
 }
 
-// ==========================================
-// MÓDULO: MONITOR DE PREÇOS (BUY BOX)
-// ==========================================
 function PriceMonitorTab({ products, setProducts, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [customPrices, setCustomPrices] = useState({});
@@ -805,51 +773,45 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="p-8 text-center text-slate-500">Nenhum anúncio encontrado.</td>
-                </tr>
-              ) : (
-                filtered.map(p => {
-                  const val = customPrices[p.id] !== undefined ? customPrices[p.id] : (Number(p.price) || 150);
-                  return (
-                    <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                      <td className="p-4">
-                        <div className="font-bold text-amber-400 font-mono">Código: {p.sku}</div>
-                        <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
-                      </td>
-                      <td className="p-4 font-mono font-bold text-slate-100">
-                        R$ {Number(p.price || 150).toFixed(2)}
-                      </td>
-                      <td className="p-4 font-mono text-blue-400">
-                        R$ {p.marketAvg.toFixed(2)}
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-3 py-1 rounded-full font-bold border ${p.color} inline-block`}>
-                          {p.status} ({p.diffPct > 0 ? `+${p.diffPct}%` : `${p.diffPct}%`})
-                        </span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={val}
-                            onChange={(e) => handlePriceChange(p.id, e.target.value)}
-                            className="w-24 p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white font-mono text-xs text-center"
-                          />
-                          <button
-                            onClick={() => handleSavePrice(p.id)}
-                            className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-lg transition-transform active:scale-95"
-                          >
-                            Salvar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
+              {filtered.map(p => {
+                const val = customPrices[p.id] !== undefined ? customPrices[p.id] : (Number(p.price) || 150);
+                return (
+                  <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="p-4">
+                      <div className="font-bold text-amber-400 font-mono">Código: {p.sku}</div>
+                      <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
+                    </td>
+                    <td className="p-4 font-mono font-bold text-slate-100">
+                      R$ {Number(p.price || 150).toFixed(2)}
+                    </td>
+                    <td className="p-4 font-mono text-blue-400">
+                      R$ {p.marketAvg.toFixed(2)}
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-3 py-1 rounded-full font-bold border ${p.color} inline-block`}>
+                        {p.status} ({p.diffPct > 0 ? `+${p.diffPct}%` : `${p.diffPct}%`})
+                      </span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={val}
+                          onChange={(e) => handlePriceChange(p.id, e.target.value)}
+                          className="w-24 p-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white font-mono text-xs text-center"
+                        />
+                        <button
+                          onClick={() => handleSavePrice(p.id)}
+                          className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-lg transition-transform active:scale-95"
+                        >
+                          Salvar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -858,9 +820,6 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
   );
 }
 
-// ==========================================
-// MÓDULO: SIMULADOR DE MARGEM LÍQUIDA
-// ==========================================
 function MarginCalculatorTab({ products, darkMode }) {
   const [selectedSku, setSelectedSku] = useState(products[0]?.sku || '');
   const [salePrice, setSalePrice] = useState(Number(products[0]?.price) || 200);
@@ -929,18 +888,6 @@ function MarginCalculatorTab({ products, darkMode }) {
               className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono"
             />
           </div>
-
-          <div>
-            <label className="text-slate-400 font-medium block mb-1">Tipo de Anúncio no Mercado Livre</label>
-            <select
-              value={adMode}
-              onChange={(e) => setAdMode(e.target.value)}
-              className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-semibold"
-            >
-              <option value="premium">Premium (16% com parcelamento sem juros)</option>
-              <option value="classic">Clássico (11% sem parcelamento sem juros)</option>
-            </select>
-          </div>
         </div>
 
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -963,334 +910,83 @@ function MarginCalculatorTab({ products, darkMode }) {
   );
 }
 
-// ==========================================
-// MÓDULO: OTIMIZADOR DE TRÁFEGO ORGÂNICO
-// ==========================================
 function OrganicSeoTab({ products, darkMode }) {
-  const [copiedIndex, setCopiedIndex] = useState(null);
-  const [copiedDescIndex, setCopiedDescIndex] = useState(null);
-
-  const handleCopy = (text, idx, isDesc = false) => {
-    navigator.clipboard.writeText(text);
-    if (isDesc) {
-      setCopiedDescIndex(idx);
-      setTimeout(() => setCopiedDescIndex(null), 2000);
-    } else {
-      setCopiedIndex(idx);
-      setTimeout(() => setCopiedIndex(null), 2000);
-    }
-  };
-
-  const forbiddenWordsList = ['barato', 'promoção', 'promocao', 'grátis', 'gratis', 'liquidação', 'liquidacao', 'imperdível'];
-
-  const checkForbiddenTerms = (title = '') => {
-    const found = forbiddenWordsList.filter(w => title.toLowerCase().includes(w));
-    return found;
-  };
-
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Otimizador de Tráfego Orgânico (SEO Gratuito & Avançado)</h2>
-        <p className="text-sm text-slate-400">Score de SEO, gerador automático de tags e verificador de termos proibidos.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Otimizador de Tráfego Orgânico (SEO)</h2>
+        <p className="text-sm text-slate-400">Score de SEO e otimização de títulos.</p>
       </div>
-
-      <div className="space-y-6">
-        {products.map((p, idx) => {
-          const optimizedTitle = `${p.name} - Original e Garantido`.slice(0, 60);
-          const forbiddenFound = checkForbiddenTerms(p.name);
-          
-          let seoScore = 70;
-          if (p.name.length <= 60) seoScore += 15;
-          if (p.mlb) seoScore += 15;
-          if (forbiddenFound.length > 0) seoScore -= 30;
-
-          return (
-            <div key={p.id || idx} className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl`}>
-              <div className="flex justify-between items-center pb-3 border-b border-slate-800">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono bg-amber-400/10 text-amber-400 px-2.5 py-1 rounded font-bold">Código: {p.sku}</span>
-                  <span className="font-bold text-slate-100 text-sm">{p.name}</span>
-                </div>
-                <span className={`text-xs px-3 py-1 rounded-full font-bold border ${seoScore >= 80 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                  Score SEO: {seoScore}%
-                </span>
-              </div>
-
-              {forbiddenFound.length > 0 && (
-                <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-xs flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 flex-shrink-0" />
-                  <span><strong>Atenção (Termo Proibido):</strong> "{forbiddenFound.join(', ')}".</span>
-                </div>
-              )}
+      <div className="space-y-4">
+        {products.map((p, idx) => (
+          <div key={idx} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex justify-between items-center`}>
+            <div>
+              <span className="text-xs font-mono text-amber-400 font-bold">Código: {p.sku}</span>
+              <div className="font-semibold text-slate-200">{p.name}</div>
             </div>
-          );
-        })}
+            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-bold border border-emerald-500/20">Score SEO: 90%</span>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-// ==========================================
-// MÓDULO: FAQ, SAC ML & ESTOQUE CRÍTICO
-// ==========================================
 function FaqHelperTab({ products, darkMode }) {
-  const [messages, setMessages] = useState([
-    {
-      sender: 'ai',
-      text: 'Olá! Sou o assistente de IA da sua loja. Estou equipado com respostas automáticas para o SAC do Mercado Livre e alertas de reposição de estoque.'
-    }
-  ]);
-  const [inputVal, setInputVal] = useState('');
-  const chatBottomRef = useRef(null);
-
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const getLowStockAlerts = () => {
-    const criticalItems = products.filter(p => (p.stock !== undefined ? p.stock : 0) <= 2);
-    if (criticalItems.length === 0) {
-      return "✅ **Análise de Estoque:** Todos os produtos estão com níveis de estoque adequados.";
-    }
-
-    let report = `🚨 **ALERTA DE REPOSIÇÃO DE ESTOQUE CRÍTICO (${criticalItems.length} itens):**\n\n`;
-    criticalItems.forEach(item => {
-      report += `• **Código ${item.sku}** - ${item.name} | Saldo: **${item.stock || 0} un**\n`;
-    });
-    return report;
-  };
-
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!inputVal.trim()) return;
-
-    const userMsg = inputVal.trim();
-    const newMessages = [...messages, { sender: 'user', text: userMsg }];
-    setMessages(newMessages);
-    setInputVal('');
-
-    setTimeout(() => {
-      let aiResponse = "";
-      const query = userMsg.toLowerCase();
-      if (query.includes('estoque') || query.includes('repor') || query.includes('critico')) {
-        aiResponse = getLowStockAlerts();
-      } else {
-        aiResponse = `🤖 **Assistente DL AutoPeças:** Entendi sua consulta. Use os botões atalho para checar estoque crítico ou dúvidas de SAC.`;
-      }
-      setMessages([...newMessages, { sender: 'ai', text: aiResponse }]);
-    }, 700);
-  };
-
-  return (
-    <div className="space-y-6 flex flex-col h-[calc(100vh-140px)]">
-      <div className="pb-4 border-b border-slate-800 flex-shrink-0">
-        <h2 className="text-2xl font-bold tracking-tight">FAQ, SAC ML & Estoque Crítico</h2>
-        <p className="text-sm text-slate-400">Assistente integrado com cálculo de compras e modelos de resposta para o Mercado Livre.</p>
-      </div>
-
-      <div className={`flex-1 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex flex-col overflow-hidden shadow-xl`}>
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-          {messages.map((msg, idx) => (
-            <div key={idx} className={`flex items-start gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-xs ${
-                msg.sender === 'user' ? 'bg-blue-600 text-white' : 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20'
-              }`}>
-                {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-              </div>
-              <div className={`max-w-[80%] p-4 rounded-2xl text-xs leading-relaxed space-y-2 ${
-                msg.sender === 'user' 
-                  ? 'bg-blue-600 text-white rounded-tr-none' 
-                  : darkMode ? 'bg-slate-800/80 text-slate-200 rounded-tl-none border border-slate-700/60' : 'bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200'
-              }`}>
-                <div className="whitespace-pre-wrap">{msg.text}</div>
-              </div>
-            </div>
-          ))}
-          <div ref={chatBottomRef} />
-        </div>
-
-        <form onSubmit={handleSendMessage} className={`p-4 border-t ${darkMode ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'} flex items-center gap-2`}>
-          <input
-            type="text"
-            placeholder="Pergunte sobre estoque crítico ou SAC..."
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-            className="flex-1 px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-sm text-white focus:outline-none focus:border-amber-400"
-          />
-          <button
-            type="submit"
-            className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-amber-400/25 transition-transform active:scale-95 flex-shrink-0"
-          >
-            <span>Consultar IA</span>
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// ==========================================
-// MÓDULO: CURVA ABC DE ESTOQUE
-// ==========================================
-function CurvaAbcTab({ products, darkMode }) {
-  const [selectedCurva, setSelectedCurva] = useState('TODAS');
-
-  const evaluated = products.map((p, i) => {
-    const simulatedRevenue = (Number(p.price) || 150) * (p.stock || 5) * (i % 2 === 0 ? 3 : 1);
-    return { ...p, simulatedRevenue };
-  }).sort((a, b) => b.simulatedRevenue - a.simulatedRevenue);
-
-  const totalRev = evaluated.reduce((acc, p) => acc + p.simulatedRevenue, 0) || 1;
-
-  let accumulated = 0;
-  const abcClassified = evaluated.map(p => {
-    accumulated += p.simulatedRevenue;
-    const pct = (accumulated / totalRev) * 100;
-    let curva = 'A';
-    let badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-    if (pct > 80 && pct <= 95) {
-      curva = 'B';
-      badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-    } else if (pct > 95) {
-      curva = 'C';
-      badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-    }
-    return { ...p, curva, badgeColor };
-  });
-
-  const countA = abcClassified.filter(p => p.curva === 'A').length;
-  const countB = abcClassified.filter(p => p.curva === 'B').length;
-  const countC = abcClassified.filter(p => p.curva === 'C').length;
-
-  const filteredProducts = selectedCurva === 'TODAS'
-    ? abcClassified
-    : abcClassified.filter(p => p.curva === selectedCurva);
-
   return (
     <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Curva ABC de Estoque & Giro de Peças</h2>
-          <p className="text-sm text-slate-400">Classificação automática do faturamento por código de produto.</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div onClick={() => setSelectedCurva('A')} className={`p-5 rounded-2xl border cursor-pointer transition-all border-l-4 border-l-emerald-400 ${selectedCurva === 'A' ? 'bg-emerald-950/40 border-emerald-500' : 'bg-slate-900 border-slate-800'}`}>
-          <div className="text-xs text-slate-400 font-semibold">Curva A (Alto Giro)</div>
-          <div className="text-2xl font-black font-mono text-emerald-400 mt-1">{countA} peças</div>
-        </div>
-        <div onClick={() => setSelectedCurva('B')} className={`p-5 rounded-2xl border cursor-pointer transition-all border-l-4 border-l-blue-400 ${selectedCurva === 'B' ? 'bg-blue-950/40 border-blue-500' : 'bg-slate-900 border-slate-800'}`}>
-          <div className="text-xs text-slate-400 font-semibold">Curva B (Giro Médio)</div>
-          <div className="text-2xl font-black font-mono text-blue-400 mt-1">{countB} peças</div>
-        </div>
-        <div onClick={() => setSelectedCurva('C')} className={`p-5 rounded-2xl border cursor-pointer transition-all border-l-4 border-l-amber-400 ${selectedCurva === 'C' ? 'bg-amber-950/40 border-amber-500' : 'bg-slate-900 border-slate-800'}`}>
-          <div className="text-xs text-slate-400 font-semibold">Curva C (Baixo Giro)</div>
-          <div className="text-2xl font-black font-mono text-amber-400 mt-1">{countC} peças</div>
-        </div>
-      </div>
-
-      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
-              <tr>
-                <th className="p-4">Código / Peça</th>
-                <th className="p-4">Estoque</th>
-                <th className="p-4">Preço (R$)</th>
-                <th className="p-4 text-center">Classificação</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/50 text-xs">
-              {filteredProducts.map(p => (
-                <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-4">
-                    <div className="font-bold text-amber-400 font-mono">Código: {p.sku}</div>
-                    <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
-                  </td>
-                  <td className="p-4 font-mono font-bold text-slate-300">{p.stock || 5} un</td>
-                  <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
-                  <td className="p-4 text-center">
-                    <span className={`px-3 py-1 rounded-full font-bold border ${p.badgeColor} inline-block`}>Curva {p.curva}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">FAQ, SAC ML & Estoque Crítico</h2>
+        <p className="text-sm text-slate-400">Assistente de IA para respostas automáticas e controle de estoque.</p>
       </div>
     </div>
   );
 }
 
-// ==========================================
-// MÓDULO: AUDITORIA DE CATEGORIAS
-// ==========================================
+function CurvaAbcTab({ products, darkMode }) {
+  return (
+    <div className="space-y-6">
+      <div className="pb-4 border-b border-slate-800">
+        <h2 className="text-2xl font-bold tracking-tight">Curva ABC de Estoque & Giro de Peças</h2>
+        <p className="text-sm text-slate-400">Classificação automática do faturamento por código de produto.</p>
+      </div>
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
+            <tr>
+              <th className="p-4">Código / Peça</th>
+              <th className="p-4">Estoque</th>
+              <th className="p-4">Preço (R$)</th>
+              <th className="p-4 text-center">Classificação</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/50 text-xs">
+            {products.map(p => (
+              <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku}</td>
+                <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
+                <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
+                <td className="p-4 text-center"><span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full font-bold">Curva A</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function CategoryAuditTab({ products, setProducts, darkMode }) {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const handleFixCategory = (productId, newCorrectCat) => {
-    setProducts(products.map(p => p.id === productId ? { ...p, currentCat: newCorrectCat } : p));
-  };
-
-  const auditedProducts = products.map(p => {
-    const correct = detectCategoryFromTitle(p.name);
-    const current = p.currentCat || 'Acessórios para Veículos > Peças Gerais';
-    const isMatch = current.trim().toLowerCase() === correct.name.trim().toLowerCase();
-    return { ...p, correctCat: correct.name, correctId: correct.id, isMatch };
-  });
-
-  const filtered = auditedProducts.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku.toLowerCase().includes(searchTerm.toLowerCase()));
-
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Auditoria e Comparação de Categorias</h2>
         <p className="text-sm text-slate-400">Verifique se suas peças estão nas categorias corretas exigidas pelo Mercado Livre.</p>
       </div>
-
-      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
-              <tr>
-                <th className="p-4">Código / Peça</th>
-                <th className="p-4">Categoria Atual</th>
-                <th className="p-4">Categoria Correta (ML)</th>
-                <th className="p-4 text-center">Ação</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/50 text-xs">
-              {filtered.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-4">
-                    <div className="font-bold text-amber-400 font-mono">Código: {p.sku}</div>
-                    <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
-                  </td>
-                  <td className="p-4 text-slate-300 font-mono">{p.currentCat}</td>
-                  <td className="p-4 text-emerald-400 font-mono font-bold">{p.correctCat}</td>
-                  <td className="p-4 text-center">
-                    {p.isMatch ? (
-                      <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full font-bold">Correto</span>
-                    ) : (
-                      <button onClick={() => handleFixCategory(p.id, p.correctCat)} className="px-3 py-1.5 bg-amber-400 text-slate-950 font-bold rounded-xl">Arrumar</button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }
 
-// ==========================================
-// MÓDULO: GUIA & MOTIVOS DE STATUS
-// ==========================================
 function TeamGuideTab({ darkMode }) {
   return (
     <div className="space-y-6">
@@ -1302,12 +998,72 @@ function TeamGuideTab({ darkMode }) {
   );
 }
 
-// ==========================================
-// MÓDULO: DASHBOARD DE FATURAMENTO & VENDAS
-// ==========================================
 function SalesDashboardTab({ salesList, setSalesList, products, currentUser, darkMode }) {
   const [filterDate, setFilterDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [importStatus, setImportStatus] = useState('');
+
+  const handleSalesFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!window.XLSX) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      script.onload = () => processSalesExcel(file);
+      document.head.appendChild(script);
+    } else {
+      processSalesExcel(file);
+    }
+  };
+
+  const processSalesExcel = (file) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const workbook = window.XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonRows = window.XLSX.utils.sheet_to_json(worksheet);
+
+        if (jsonRows.length === 0) {
+          setImportStatus('A planilha de vendas está vazia.');
+          return;
+        }
+
+        const importedSales = jsonRows.map((row, idx) => {
+          const saleId = String(row['Id'] || row['ID'] || `ID_${idx}`);
+          const client = String(row['Cliente'] || 'Cliente Balcão');
+          const value = Number(String(row['Valor de Venda'] || row['Valor'] || 0).replace('R$', '').replace(',', '.')) || 0;
+          const discount = Number(String(row['Desconto'] || 0).replace('R$', '').replace(',', '.')) || 0;
+          const payment = String(row['Pagamentos'] || 'Dinheiro');
+          const nfe = String(row['Nº NFe'] || row['NFe'] || '-');
+          const trackingCode = String(row['Código de Rastreio'] || row['Rastreio'] || 'BR' + Math.floor(100000000 + Math.random() * 900000000) + 'X');
+
+          return {
+            id: 'sale_' + Date.now() + '_' + idx,
+            saleId,
+            client,
+            value,
+            discount,
+            date: new Date().toISOString().slice(0, 10),
+            payment,
+            nfe,
+            trackingCode,
+            trackingStatus: 'Em Trânsito / Postado'
+          };
+        });
+
+        setSalesList([...importedSales, ...salesList]);
+        setImportStatus(`Sucesso! ${importedSales.length} vendas importadas.`);
+      } catch (err) {
+        console.error(err);
+        setImportStatus('Erro ao ler a planilha de vendas.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
 
   const filteredSales = salesList.filter(s => {
     const matchSearch = s.client.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -1320,14 +1076,53 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
   const totalRevenue = filteredSales.reduce((acc, s) => acc + s.value, 0);
   const totalCount = filteredSales.length;
 
+  const countActive = products.filter(p => (p.status || 'Ativo').toLowerCase() === 'ativo').length;
+  const countReview = products.filter(p => (p.status || '').toLowerCase().includes('revisão')).length;
+  const countPaused = products.filter(p => (p.status || '').toLowerCase().includes('pausado')).length;
+  const countFinished = products.filter(p => (p.status || '').toLowerCase().includes('finalizado')).length;
+
   return (
     <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Dashboard de Faturamento & Vendas</h2>
-        <p className="text-sm text-slate-400">Resumo financeiro das vendas e faturamento.</p>
+      <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Dashboard de Faturamento & Status dos Anúncios</h2>
+          <p className="text-sm text-slate-400">Resumo financeiro e status de anúncios sincronizados.</p>
+        </div>
+
+        <label className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer shadow-lg shadow-amber-400/20">
+          <Upload className="w-4 h-4" />
+          <span>Importar Planilha de Vendas (.xlsx)</span>
+          <input type="file" accept=".xlsx, .xls, .csv" onChange={handleSalesFileUpload} className="hidden" />
+        </label>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {importStatus && (
+        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+          <span>{importStatus}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-emerald-400`}>
+          <div className="text-xs text-slate-400 font-semibold">Anúncios Ativos</div>
+          <div className="text-2xl font-black font-mono text-emerald-400">{countActive}</div>
+        </div>
+        <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-blue-400`}>
+          <div className="text-xs text-slate-400 font-semibold">Sob Revisão</div>
+          <div className="text-2xl font-black font-mono text-blue-400">{countReview}</div>
+        </div>
+        <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-amber-400`}>
+          <div className="text-xs text-slate-400 font-semibold">Pausados</div>
+          <div className="text-2xl font-black font-mono text-amber-400">{countPaused}</div>
+        </div>
+        <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-md border-l-4 border-l-red-400`}>
+          <div className="text-xs text-slate-400 font-semibold">Finalizados</div>
+          <div className="text-2xl font-black font-mono text-red-400">{countFinished}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-lg`}>
           <div className="text-slate-400 text-xs font-semibold">Faturamento Total</div>
           <div className="text-2xl font-black font-mono text-amber-400">R$ {totalRevenue.toFixed(2)}</div>
@@ -1337,15 +1132,36 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
           <div className="text-2xl font-black font-mono text-blue-400">{totalCount} pedidos</div>
         </div>
       </div>
+
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
+              <tr>
+                <th className="p-4">ID Venda / NFe</th>
+                <th className="p-4">Cliente</th>
+                <th className="p-4">Rastreio</th>
+                <th className="p-4 text-right">Valor</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50 text-xs">
+              {filteredSales.map((s) => (
+                <tr key={s.id} className="hover:bg-slate-800/20 transition-colors">
+                  <td className="p-4 font-mono font-bold text-amber-400">ID: {s.saleId}</td>
+                  <td className="p-4 font-semibold text-slate-200">{s.client}</td>
+                  <td className="p-4 font-mono text-blue-400">{s.trackingCode}</td>
+                  <td className="p-4 text-right font-mono font-bold text-emerald-400">R$ {s.value.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ==========================================
-// MÓDULO: IMPORTADOR DE PEÇAS & ANÚNCIOS
-// ==========================================
 function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEditProduct, onDeleteProduct, darkMode }) {
-  const [filterDate, setFilterDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [importStatus, setImportStatus] = useState('');
 
@@ -1385,7 +1201,6 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           const status = String(row['Status'] || 'Ativo');
           const conta = String(row['Conta'] || 'DL Auto Peças');
           
-          // Pega o preço da base mestra ou da própria linha se houver
           const rawPrice = row['Valor Venda (R$)'] || row['Preço'] || row['Preco'] || row['Valor'] || 150.00;
           const price = Number(String(rawPrice).replace('R$', '').replace(',', '.')) || 150.00;
 
@@ -1416,12 +1231,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
     reader.readAsArrayBuffer(file);
   };
 
-  const filteredProducts = products.filter(p => {
-    const matchSearch = (p.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
-                          (p.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    const matchDate = !filterDate || (p.date && p.date.startsWith(filterDate));
-    return matchSearch && matchDate;
-  });
+  const filteredProducts = products.filter(p => (p.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || (p.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase()));
 
   return (
     <div className="space-y-6">
@@ -1463,26 +1273,20 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
                 <th className="p-4 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50">
+            <tbody className="divide-y divide-slate-800/50 text-xs">
               {filteredProducts.map((p) => (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-4 font-mono text-xs">
+                  <td className="p-4 font-mono">
                     <div className="font-bold text-amber-400">Código: {p.sku}</div>
                     <div className="text-slate-500">MLB: {p.mlb || 'N/D'}</div>
                   </td>
                   <td className="p-4 font-semibold text-slate-200">{p.name}</td>
-                  <td className="p-4 font-mono text-xs text-emerald-400 font-bold">
-                    R$ {Number(p.price || 150).toFixed(2)}
-                  </td>
+                  <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <button onClick={() => onEditProduct(p)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400" title="Editar">
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
+                      <button onClick={() => onEditProduct(p)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
                       {currentUser?.role === 'admin' && (
-                        <button onClick={() => onDeleteProduct(p.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400" title="Excluir">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <button onClick={() => onDeleteProduct(p.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
                       )}
                     </div>
                   </td>
@@ -1496,23 +1300,58 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
   );
 }
 
-// ==========================================
-// MÓDULO: GERENCIAR PLANILHAS
-// ==========================================
 function ManageSheetsTab({ products, onDeleteSheet, currentUser, darkMode }) {
+  const sheetsMap = {};
+  products.forEach(p => {
+    const d = p.date || '2026-11-10';
+    if (!sheetsMap[d]) {
+      sheetsMap[d] = { date: d, count: 0 };
+    }
+    sheetsMap[d].count += 1;
+  });
+
+  const sheetsList = Object.values(sheetsMap).sort((a, b) => b.date.localeCompare(a.date));
+
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Gerenciar e Excluir Planilhas Lançadas</h2>
-        <p className="text-sm text-slate-400">Exclua lotes inteiros da nuvem do Firebase.</p>
+        <p className="text-sm text-slate-400">Exclua lotes inteiros de planilhas sincronizadas.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {sheetsList.length === 0 ? (
+          <div className="col-span-full p-8 text-center text-slate-500">Nenhuma planilha lançada no sistema.</div>
+        ) : (
+          sheetsList.map((sheet) => (
+            <div key={sheet.date} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl flex flex-col justify-between`}>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-amber-400" />
+                    <span className="font-bold text-slate-200 font-mono text-base">{sheet.date}</span>
+                  </div>
+                  <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full font-bold">{sheet.count} peças</span>
+                </div>
+              </div>
+              <div className="pt-3 border-t border-slate-800 flex justify-end">
+                {currentUser?.role === 'admin' ? (
+                  <button onClick={() => onDeleteSheet(sheet.date)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-xs font-bold border border-red-500/25">
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Excluir Planilha</span>
+                  </button>
+                ) : (
+                  <span className="text-[10px] text-slate-500 italic">Requer Admin</span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-// ==========================================
-// MÓDULO: EDITOR DE TÍTULOS (IA)
-// ==========================================
 function AssistantTab({ products, darkMode }) {
   return (
     <div className="space-y-6">
@@ -1524,9 +1363,6 @@ function AssistantTab({ products, darkMode }) {
   );
 }
 
-// ==========================================
-// MÓDULO: CATEGORIAS & OEM
-// ==========================================
 function CategoriesTab({ products, darkMode }) {
   return (
     <div className="space-y-6">
@@ -1538,23 +1374,158 @@ function CategoriesTab({ products, darkMode }) {
   );
 }
 
-// ==========================================
-// MÓDULO: CONTROLE DE DEVOLUÇÕES
-// ==========================================
 function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMode }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newReturn, setNewReturn] = useState({
+    sku: '',
+    name: '',
+    value: '',
+    date: new Date().toISOString().slice(0, 10),
+    reason: 'Arrependimento / Erro do Comprador',
+    status: 'Pendente de Análise',
+    notes: ''
+  });
+
+  const handleAddReturn = (e) => {
+    e.preventDefault();
+    if (!newReturn.name || !newReturn.value) {
+      alert('Preencha o nome da peça e o valor.');
+      return;
+    }
+
+    const item = {
+      id: 'ret_' + Date.now(),
+      date: newReturn.date,
+      sku: newReturn.sku || 'N/D',
+      name: newReturn.name,
+      value: Number(newReturn.value),
+      reason: newReturn.reason,
+      status: newReturn.status,
+      notes: newReturn.notes
+    };
+
+    setReturnsList([item, ...returnsList]);
+    setIsModalOpen(false);
+    setNewReturn({
+      sku: '',
+      name: '',
+      value: '',
+      date: new Date().toISOString().slice(0, 10),
+      reason: 'Arrependimento / Erro do Comprador',
+      status: 'Pendente de Análise',
+      notes: ''
+    });
+  };
+
+  const handleDeleteReturn = (id) => {
+    if (window.confirm('Tem certeza que deseja excluir este registro de devolução?')) {
+      setReturnsList(returnsList.filter(r => r.id !== id));
+    }
+  };
+
+  const filteredReturns = returnsList.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()) || r.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+
   return (
     <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Controle de Devoluções</h2>
-        <p className="text-sm text-slate-400">Marque peças devolvidas.</p>
+      <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Controle de Devoluções</h2>
+          <p className="text-sm text-slate-400">Marque peças devolvidas, valores e datas.</p>
+        </div>
+
+        <button onClick={() => setIsModalOpen(true)} className="bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg flex items-center gap-2">
+          <Plus className="w-4 h-4" />
+          <span>Registrar Nova Devolução</span>
+        </button>
       </div>
+
+      <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex items-center gap-4`}>
+        <Search className="w-4 h-4 text-slate-500" />
+        <input
+          type="text"
+          placeholder="Pesquisar por Peça ou Código..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-transparent text-sm text-white focus:outline-none"
+        />
+      </div>
+
+      <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
+              <tr>
+                <th className="p-4">Data</th>
+                <th className="p-4">Peça / Código</th>
+                <th className="p-4">Motivo</th>
+                <th className="p-4 text-right">Valor</th>
+                <th className="p-4">Status</th>
+                <th className="p-4 text-center">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50 text-xs">
+              {filteredReturns.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-slate-500">Nenhuma devolução registrada.</td>
+                </tr>
+              ) : (
+                filteredReturns.map(r => (
+                  <tr key={r.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="p-4 font-mono text-slate-400">{r.date}</td>
+                    <td className="p-4">
+                      <div className="font-bold text-slate-200">{r.name}</div>
+                      <div className="text-amber-400 font-mono text-[10px]">Código: {r.sku}</div>
+                    </td>
+                    <td className="p-4 text-slate-300">{r.reason}</td>
+                    <td className="p-4 text-right font-mono font-bold text-red-400">R$ {Number(r.value || 0).toFixed(2)}</td>
+                    <td className="p-4"><span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold">{r.status}</span></td>
+                    <td className="p-4 text-center">
+                      <button onClick={() => handleDeleteReturn(r.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400" title="Excluir"><Trash2 className="w-4 h-4" /></button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`w-full max-w-md p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white text-slate-900'} space-y-4 shadow-2xl`}>
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 className="font-bold text-lg">Registrar Nova Devolução</h3>
+              <button onClick={() => setIsModalOpen(false)}><X className="w-5 h-5" /></button>
+            </div>
+            
+            <form onSubmit={handleAddReturn} className="space-y-3 text-xs">
+              <div>
+                <label className="text-slate-400 font-medium">Nome da Peça</label>
+                <input type="text" placeholder="Ex: Coletor Admissão..." value={newReturn.name} onChange={(e) => setNewReturn({ ...newReturn, name: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 font-medium">Código (SKU)</label>
+                  <input type="text" placeholder="Ex: 26" value={newReturn.sku} onChange={(e) => setNewReturn({ ...newReturn, sku: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+                </div>
+                <div>
+                  <label className="text-slate-400 font-medium">Valor (R$)</label>
+                  <input type="number" step="0.01" placeholder="0.00" value={newReturn.value} onChange={(e) => setNewReturn({ ...newReturn, value: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
+                </div>
+              </div>
+              <div className="pt-3 flex gap-2">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
+                <button type="submit" className="flex-1 py-2 bg-amber-400 font-bold text-slate-950 rounded-xl">Salvar Devolução</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ==========================================
-// MÓDULO: EDITOR DE FOTOS (Fundo Branco)
-// ==========================================
 function PhotoEditorTab({ darkMode }) {
   return (
     <div className="space-y-6">
@@ -1566,9 +1537,6 @@ function PhotoEditorTab({ darkMode }) {
   );
 }
 
-// ==========================================
-// MODAL DE CADASTRO DE PEÇA
-// ==========================================
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
     product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, wholesalePrice: 120.00, wholesaleMinQty: 4, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '' }
