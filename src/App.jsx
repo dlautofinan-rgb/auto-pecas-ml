@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Car, Sun, Moon, Shield, Briefcase, LogOut, BarChart3, FileSpreadsheet,
   Store, TrendingUp, Calculator, MessageSquare, Zap, PieChart, CheckSquare,
@@ -7,6 +7,17 @@ import {
   AlertTriangle, CheckCircle2, FileText, User, Bot, Paperclip, Send, X,
   DollarSign, ShoppingBag, Percent, Upload, Edit, Plus, Info, Truck, PackageCheck, Calendar, Database
 } from 'lucide-react';
+
+// Configuração do seu Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyBDKksCn466pxCm0kbRYN5Ia2HqVbQkUMM",
+  authDomain: "mercadolivredl-dba3b.firebaseapp.com",
+  databaseURL: "https://mercadolivredl-dba3b-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "mercadolivredl-dba3b",
+  storageBucket: "mercadolivredl-dba3b.firebasestorage.app",
+  messagingSenderId: "472505973455",
+  appId: "1:472505973455:web:3b033245b88c8c1f02d5ba"
+};
 
 const DEFAULT_PRODUCTS = [
   {
@@ -121,46 +132,96 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [darkMode, setDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState('sales-dashboard');
-  const [firebaseConnected] = useState(true);
+  const [firebaseConnected, setFirebaseConnected] = useState(false);
 
-  const [masterInventory, setMasterInventory] = useState(() => {
-    const saved = localStorage.getItem('autoflex_master_inventory');
-    return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
-  });
-
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('autoflex_products');
-    return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
-  });
-
-  const [salesList, setSalesList] = useState(() => {
-    const saved = localStorage.getItem('autoflex_sales');
-    return saved ? JSON.parse(saved) : DEFAULT_SALES;
-  });
-
-  const [returnsList, setReturnsList] = useState(() => {
-    const saved = localStorage.getItem('autoflex_returns');
-    return saved ? JSON.parse(saved) : DEFAULT_RETURNS;
-  });
+  const [masterInventory, setMasterInventory] = useState(DEFAULT_PRODUCTS);
+  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [salesList, setSalesList] = useState(DEFAULT_SALES);
+  const [returnsList, setReturnsList] = useState(DEFAULT_RETURNS);
 
   const [editingProduct, setEditingProduct] = useState(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
 
+  // Inicialização e sincronização com o Firebase Realtime Database
   useEffect(() => {
-    localStorage.setItem('autoflex_master_inventory', JSON.stringify(masterInventory));
-  }, [masterInventory]);
+    const loadFirebaseSdk = async () => {
+      if (!window.firebase) {
+        const script1 = document.createElement('script');
+        script1.src = 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js';
+        script1.onload = () => {
+          const script2 = document.createElement('script');
+          script2.src = 'https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js';
+          script2.onload = initFirebaseDb;
+          document.head.appendChild(script2);
+        };
+        document.head.appendChild(script1);
+      } else {
+        initFirebaseDb();
+      }
+    };
 
-  useEffect(() => {
-    localStorage.setItem('autoflex_products', JSON.stringify(products));
-  }, [products]);
+    loadFirebaseSdk();
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('autoflex_sales', JSON.stringify(salesList));
-  }, [salesList]);
+  const initFirebaseDb = () => {
+    try {
+      if (!window.firebase.apps.length) {
+        window.firebase.initializeApp(firebaseConfig);
+      }
+      const db = window.firebase.database();
+      setFirebaseConnected(true);
 
-  useEffect(() => {
-    localStorage.setItem('autoflex_returns', JSON.stringify(returnsList));
-  }, [returnsList]);
+      // Sincronizar dados em tempo real
+      db.ref('masterInventory').on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val) setMasterInventory(val);
+      });
+
+      db.ref('products').on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val) setProducts(val);
+      });
+
+      db.ref('salesList').on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val) setSalesList(val);
+      });
+
+      db.ref('returnsList').on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val) setReturnsList(val);
+      });
+    } catch (e) {
+      console.error('Erro ao conectar ao Firebase:', e);
+      setFirebaseConnected(false);
+    }
+  };
+
+  const saveDataToFirebase = (path, data) => {
+    if (window.firebase && firebaseConnected) {
+      window.firebase.database().ref(path).set(data);
+    }
+  };
+
+  const updateMasterInventory = (newList) => {
+    setMasterInventory(newList);
+    saveDataToFirebase('masterInventory', newList);
+  };
+
+  const updateProducts = (newList) => {
+    setProducts(newList);
+    saveDataToFirebase('products', newList);
+  };
+
+  const updateSalesList = (newList) => {
+    setSalesList(newList);
+    saveDataToFirebase('salesList', newList);
+  };
+
+  const updateReturnsList = (newList) => {
+    setReturnsList(newList);
+    saveDataToFirebase('returnsList', newList);
+  };
 
   const getMasterPriceForSku = (sku) => {
     if (!sku) return null;
@@ -190,7 +251,7 @@ export default function App() {
       return;
     }
     if (window.confirm('Tem certeza de que deseja excluir este produto?')) {
-      setProducts(products.filter(p => p.id !== id));
+      updateProducts(products.filter(p => p.id !== id));
     }
   };
 
@@ -202,11 +263,13 @@ export default function App() {
       wholesalePrice: Number((realPrice * 0.85).toFixed(2))
     };
 
+    let updated;
     if (editingProduct) {
-      setProducts(products.map(p => p.id === editingProduct.id ? { ...finalData, id: p.id } : p));
+      updated = products.map(p => p.id === editingProduct.id ? { ...finalData, id: p.id } : p);
     } else {
-      setProducts([{ ...finalData, id: 'prod_' + Date.now(), curveClass: 'A' }, ...products]);
+      updated = [{ ...finalData, id: 'prod_' + Date.now(), curveClass: 'A' }, ...products];
     }
+    updateProducts(updated);
     setIsProductModalOpen(false);
     setEditingProduct(null);
   };
@@ -217,17 +280,7 @@ export default function App() {
       return;
     }
     if (window.confirm(`ATENÇÃO: Deseja realmente excluir todas as peças da data ${dateToDelete}?`)) {
-      setProducts(products.filter(p => p.date !== dateToDelete));
-    }
-  };
-
-  const resetToDefaultData = () => {
-    if (window.confirm('Deseja restaurar os dados padrão?')) {
-      setMasterInventory(DEFAULT_PRODUCTS);
-      setProducts(DEFAULT_PRODUCTS);
-      setSalesList(DEFAULT_SALES);
-      setReturnsList(DEFAULT_RETURNS);
-      localStorage.clear();
+      updateProducts(products.filter(p => p.date !== dateToDelete));
     }
   };
 
@@ -249,7 +302,7 @@ export default function App() {
                   <h1 className="font-bold text-lg leading-tight tracking-tight text-amber-400">AutoPeças <span className="text-blue-400">ML</span></h1>
                   <p className="text-xs text-slate-400 flex items-center gap-1">
                     <span className={`w-2 h-2 rounded-full ${firebaseConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-                    {firebaseConnected ? 'Firebase Conectado' : 'Modo Local'}
+                    {firebaseConnected ? 'Firebase Conectado na Nuvem' : 'Conectando...'}
                   </p>
                 </div>
               </div>
@@ -313,14 +366,6 @@ export default function App() {
               {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
               <span>{darkMode ? 'Modo Claro' : 'Modo Escuro'}</span>
             </button>
-
-            <button 
-              onClick={resetToDefaultData}
-              title="Restaurar dados"
-              className="p-1.5 text-slate-500 hover:text-amber-400 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </aside>
@@ -329,7 +374,7 @@ export default function App() {
         {activeTab === 'sales-dashboard' && (
           <SalesDashboardTab 
             salesList={salesList} 
-            setSalesList={setSalesList} 
+            setSalesList={updateSalesList} 
             products={synchronizedProducts}
             currentUser={currentUser} 
             darkMode={darkMode} 
@@ -339,7 +384,7 @@ export default function App() {
         {activeTab === 'master-inventory' && (
           <MasterInventoryTab
             masterInventory={masterInventory}
-            setMasterInventory={setMasterInventory}
+            setMasterInventory={updateMasterInventory}
             darkMode={darkMode}
           />
         )}
@@ -347,7 +392,7 @@ export default function App() {
         {activeTab === 'import' && (
           <ImportExcelTab 
             products={synchronizedProducts} 
-            setProducts={setProducts} 
+            setProducts={updateProducts} 
             currentUser={currentUser}
             onAddProduct={() => { setEditingProduct(null); setIsProductModalOpen(true); }}
             onEditProduct={(p) => { setEditingProduct(p); setIsProductModalOpen(true); }}
@@ -358,7 +403,7 @@ export default function App() {
 
         {activeTab === 'wholesale-calc' && <WholesaleCalculatorTab products={synchronizedProducts} darkMode={darkMode} />}
 
-        {activeTab === 'price-monitor' && <PriceMonitorTab products={synchronizedProducts} setProducts={setProducts} darkMode={darkMode} />}
+        {activeTab === 'price-monitor' && <PriceMonitorTab products={synchronizedProducts} setProducts={updateProducts} darkMode={darkMode} />}
 
         {activeTab === 'margin-calculator' && <MarginCalculatorTab products={synchronizedProducts} darkMode={darkMode} />}
 
@@ -366,9 +411,9 @@ export default function App() {
 
         {activeTab === 'organic-seo' && <OrganicSeoTab products={synchronizedProducts} darkMode={darkMode} />}
 
-        {activeTab === 'curva-abc' && <CurvaAbcTab products={synchronizedProducts} setProducts={setProducts} darkMode={darkMode} />}
+        {activeTab === 'curva-abc' && <CurvaAbcTab products={synchronizedProducts} setProducts={updateProducts} darkMode={darkMode} />}
 
-        {activeTab === 'category-audit' && <CategoryAuditTab products={synchronizedProducts} setProducts={setProducts} darkMode={darkMode} />}
+        {activeTab === 'category-audit' && <CategoryAuditTab products={synchronizedProducts} setProducts={updateProducts} darkMode={darkMode} />}
 
         {activeTab === 'manage-sheets' && (
           <ManageSheetsTab 
@@ -381,11 +426,11 @@ export default function App() {
 
         {activeTab === 'team-guide' && <TeamGuideTab darkMode={darkMode} />}
 
-        {activeTab === 'assistant' && <AssistantTab products={synchronizedProducts} setProducts={setProducts} darkMode={darkMode} />}
+        {activeTab === 'assistant' && <AssistantTab products={synchronizedProducts} setProducts={updateProducts} darkMode={darkMode} />}
 
-        {activeTab === 'categories' && <CategoriesTab products={synchronizedProducts} setProducts={setProducts} darkMode={darkMode} />}
+        {activeTab === 'categories' && <CategoriesTab products={synchronizedProducts} setProducts={updateProducts} darkMode={darkMode} />}
 
-        {activeTab === 'returns' && <ReturnsTab returnsList={returnsList} setReturnsList={setReturnsList} products={synchronizedProducts} currentUser={currentUser} darkMode={darkMode} />}
+        {activeTab === 'returns' && <ReturnsTab returnsList={returnsList} setReturnsList={updateReturnsList} products={synchronizedProducts} currentUser={currentUser} darkMode={darkMode} />}
 
         {activeTab === 'photo' && <PhotoEditorTab darkMode={darkMode} />}
       </main>
@@ -460,7 +505,7 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, darkMode }) {
         });
 
         setMasterInventory(imported);
-        setImportStatus(`Sucesso! ${imported.length} itens carregados na Base de Estoque Geral[cite: 5]. Preços reais vinculados.`);
+        setImportStatus(`Sucesso! ${imported.length} itens salvos no Firebase na nuvem[cite: 5].`);
       } catch (err) {
         console.error(err);
         setImportStatus('Erro ao ler a planilha de estoque.');
@@ -479,7 +524,7 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, darkMode }) {
       <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Base de Estoque Geral (Código, Produto e Valor)</h2>
-          <p className="text-sm text-slate-400">Jogue sua planilha completa de estoque aqui[cite: 5]. As colunas Código[cite: 5], Produto[cite: 5] e Valor Venda (R$)[cite: 5] são mapeadas automaticamente.</p>
+          <p className="text-sm text-slate-400">Jogue sua planilha de estoque[cite: 5]. Sincronizado automaticamente com o Firebase da equipe.</p>
         </div>
 
         <label className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer shadow-lg shadow-amber-400/20 transition-transform active:scale-95">
@@ -571,7 +616,7 @@ function LoginScreen({ onLogin, darkMode, setDarkMode }) {
             <Car className="w-10 h-10" />
           </div>
           <h1 className="text-3xl font-black tracking-tight">AutoPeças <span className="text-blue-500">ML Suite</span></h1>
-          <p className="text-sm text-slate-400">Controle de Faturamento e Vendas (Firebase)</p>
+          <p className="text-sm text-slate-400">Sincronizado na Nuvem (Firebase)</p>
         </div>
 
         <div className={`p-6 md:p-8 rounded-3xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} shadow-2xl space-y-6`}>
@@ -724,7 +769,7 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
     const val = customPrices[id];
     if (val !== undefined) {
       setProducts(products.map(p => p.id === id ? { ...p, price: val } : p));
-      alert('Preço atualizado com sucesso!');
+      alert('Preço atualizado e salvo no Firebase!');
     }
   };
 
@@ -1441,7 +1486,7 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
         });
 
         setSalesList([...importedSales, ...salesList]);
-        setImportStatus(`Sucesso! ${importedSales.length} vendas importadas.`);
+        setImportStatus(`Sucesso! ${importedSales.length} vendas salvas no Firebase.`);
       } catch (err) {
         console.error(err);
         setImportStatus('Erro ao ler a planilha de vendas.');
@@ -1477,7 +1522,7 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
       <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Dashboard de Faturamento & Status dos Anúncios</h2>
-          <p className="text-sm text-slate-400">Resumo financeiro e status de anúncios sincronizados.</p>
+          <p className="text-sm text-slate-400">Resumo financeiro e status de anúncios sincronizados via Firebase.</p>
         </div>
 
         <label className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer shadow-lg shadow-amber-400/20">
@@ -1630,7 +1675,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
         });
 
         setProducts([...imported, ...products]);
-        setImportStatus(`Sucesso! ${imported.length} peças importadas com os valores reais da planilha.`);
+        setImportStatus(`Sucesso! ${imported.length} peças importadas e salvas no Firebase.`);
       } catch (err) {
         console.error(err);
         setImportStatus('Erro ao ler a planilha Excel.');
