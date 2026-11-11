@@ -56,20 +56,6 @@ const DEFAULT_RETURNS = [
   }
 ];
 
-function detectCategoryFromTitle(title = '') {
-  const t = title.toLowerCase();
-  if (t.includes('coletor') || t.includes('injeção') || t.includes('bico')) {
-    return { name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Injeção', id: 'MLB1660' };
-  }
-  if (t.includes('reservatorio') || t.includes('radiador') || t.includes('água')) {
-    return { name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Eletroventiladores e Radiadores', id: 'MLB403323' };
-  }
-  if (t.includes('freio') || t.includes('pastilha') || t.includes('disco')) {
-    return { name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios', id: 'MLB8444' };
-  }
-  return { name: 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Peças de Motor', id: 'MLB24424' };
-}
-
 function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
   const isSelected = active === id;
   return (
@@ -929,6 +915,14 @@ function FaqHelperTab({ products, darkMode }) {
       <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4`}>
         <h3 className="font-bold text-amber-400">Perguntas Frequentes (FAQ Automático Mercado Livre)</h3>
         <p className="text-xs text-slate-400">Aqui você pode consultar respostas rápidas para os clientes sobre compatibilidade e aplicação de peças.</p>
+        <div className="space-y-2 pt-2">
+          {products.map(p => (
+            <div key={p.id} className="p-3 bg-slate-800/40 rounded-xl text-xs space-y-1">
+              <span className="text-amber-400 font-mono font-bold">Peça: {p.name} (Código: {p.sku})</span>
+              <p className="text-slate-300">💡 <strong>Resposta sugerida:</strong> Sim, esta peça possui encaixe perfeito e garantia de fábrica para o modelo correspondente.</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
