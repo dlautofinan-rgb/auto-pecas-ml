@@ -8,7 +8,6 @@ import {
   DollarSign, ShoppingBag, Percent, Upload, Edit, Plus, Info, Truck, PackageCheck, Calendar, Database
 } from 'lucide-react';
 
-// Configuração do seu Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBDKksCn466pxCm0kbRYN5Ia2HqVbQkUMM",
   authDomain: "mercadolivredl-dba3b.firebaseapp.com",
@@ -69,7 +68,6 @@ const DEFAULT_RETURNS = [
   }
 ];
 
-// Motor de IA Avançado para Autopeças (Mercado Livre)
 function aiAnalyzeAutoPart(title = '') {
   const t = title.toLowerCase();
   
@@ -221,17 +219,17 @@ export default function App() {
     saveDataToFirebase('returnsList', newList);
   };
 
-  // Função robusta de vínculo com a Base de Estoque Geral por SKU
+  // Vínculo robusto buscando na base geral de estoque por SKU
   const getMasterPriceForSku = (sku) => {
     if (!sku) return null;
-    const cleanSku = String(sku).trim();
-    const found = masterInventory.find(item => String(item.sku).trim() === cleanSku);
+    const cleanSku = String(sku).trim().toLowerCase();
+    const found = masterInventory.find(item => String(item.sku).trim().toLowerCase() === cleanSku);
     return found ? Number(found.price) : null;
   };
 
   const synchronizedProducts = products.map(p => {
     const realPrice = getMasterPriceForSku(p.sku);
-    if (realPrice !== null && !isNaN(realPrice)) {
+    if (realPrice !== null && !isNaN(realPrice) && realPrice > 0) {
       return {
         ...p,
         price: realPrice,
@@ -281,6 +279,26 @@ export default function App() {
     }
     if (window.confirm(`ATENÇÃO: Deseja realmente excluir todas as peças da data ${dateToDelete}?`)) {
       updateProducts(products.filter(p => p.date !== dateToDelete));
+    }
+  };
+
+  const handleDeleteSalesSheetByDate = (dateToDelete) => {
+    if (currentUser?.role !== 'admin') {
+      alert('Apenas administradores podem excluir planilhas de vendas.');
+      return;
+    }
+    if (window.confirm(`ATENÇÃO: Deseja realmente excluir todas as vendas da data ${dateToDelete}?`)) {
+      updateSalesList(salesList.filter(s => s.date !== dateToDelete));
+    }
+  };
+
+  const handleDeleteMasterSheet = () => {
+    if (currentUser?.role !== 'admin') {
+      alert('Apenas administradores podem limpar a base de estoque geral.');
+      return;
+    }
+    if (window.confirm('ATENÇÃO: Deseja realmente limpar toda a Base de Estoque Geral?')) {
+      updateMasterInventory([]);
     }
   };
 
@@ -385,6 +403,8 @@ export default function App() {
           <MasterInventoryTab
             masterInventory={masterInventory}
             setMasterInventory={updateMasterInventory}
+            onDeleteMasterSheet={handleDeleteMasterSheet}
+            currentUser={currentUser}
             darkMode={darkMode}
           />
         )}
@@ -417,8 +437,10 @@ export default function App() {
 
         {activeTab === 'manage-sheets' && (
           <ManageSheetsTab 
-            products={synchronizedProducts} 
+            products={products} 
+            salesList={salesList}
             onDeleteSheet={handleDeleteSheetByDate} 
+            onDeleteSalesSheet={handleDeleteSalesSheetByDate}
             currentUser={currentUser} 
             darkMode={darkMode} 
           />
@@ -447,7 +469,7 @@ export default function App() {
   );
 }
 
-function MasterInventoryTab({ masterInventory, setMasterInventory, darkMode }) {
+function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMasterSheet, currentUser, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [importStatus, setImportStatus] = useState('');
 
@@ -527,11 +549,23 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, darkMode }) {
           <p className="text-sm text-slate-400">Jogue sua planilha de estoque[cite: 5]. Sincronizado automaticamente com o Firebase da equipe.</p>
         </div>
 
-        <label className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer shadow-lg shadow-amber-400/20 transition-transform active:scale-95">
-          <Upload className="w-4 h-4" />
-          <span>Jogar Planilha de Estoque Completo (.xlsx)</span>
-          <input type="file" accept=".xlsx, .xls, .csv" onChange={handleMasterUpload} className="hidden" />
-        </label>
+        <div className="flex items-center gap-2">
+          {masterInventory.length > 0 && currentUser?.role === 'admin' && (
+            <button
+              onClick={onDeleteMasterSheet}
+              className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/25 text-red-400 px-4 py-2.5 rounded-xl font-bold text-sm border border-red-500/30 transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Excluir Base Geral</span>
+            </button>
+          )}
+
+          <label className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer shadow-lg shadow-amber-400/20 transition-transform active:scale-95">
+            <Upload className="w-4 h-4" />
+            <span>Jogar Planilha de Estoque Completo (.xlsx)</span>
+            <input type="file" accept=".xlsx, .xls, .csv" onChange={handleMasterUpload} className="hidden" />
+          </label>
+        </div>
       </div>
 
       {importStatus && (
@@ -1462,6 +1496,7 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
           return;
         }
 
+        const currentDate = new Date().toISOString().slice(0, 10);
         const importedSales = jsonRows.map((row, idx) => {
           const saleId = String(row['Id'] || row['ID'] || `ID_${idx}`);
           const client = String(row['Cliente'] || 'Cliente Balcão');
@@ -1477,7 +1512,7 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
             client,
             value,
             discount,
-            date: new Date().toISOString().slice(0, 10),
+            date: currentDate,
             payment,
             nfe,
             trackingCode,
@@ -1574,7 +1609,7 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
-                <th className="p-4">ID Venda / NFe</th>
+                <th className="p-4">Data / ID Venda</th>
                 <th className="p-4">Cliente</th>
                 <th className="p-4">Rastreio</th>
                 <th className="p-4 text-right">Valor</th>
@@ -1589,7 +1624,10 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
               ) : (
                 filteredSales.map((s) => (
                   <tr key={s.id} className="hover:bg-slate-800/20 transition-colors">
-                    <td className="p-4 font-mono font-bold text-amber-400">ID: {s.saleId}</td>
+                    <td className="p-4 font-mono">
+                      <div className="text-slate-400 text-[10px]">{s.date}</div>
+                      <div className="font-bold text-amber-400">ID: {s.saleId}</div>
+                    </td>
                     <td className="p-4 font-semibold text-slate-200">{s.client}</td>
                     <td className="p-4 font-mono text-blue-400">{s.trackingCode}</td>
                     <td className="p-4 text-right font-mono font-bold text-emerald-400">R$ {s.value.toFixed(2)}</td>
@@ -1646,6 +1684,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           return;
         }
 
+        const currentDate = new Date().toISOString().slice(0, 10);
         const imported = jsonRows.map((row, idx) => {
           const sku = String(row['Código'] || row['Codigo'] || row['SKU'] || row['sku'] || `SKU_${idx}`);
           const mlb = String(row['Código MLB'] || row['MLB'] || row['Meli Id'] || 'MLB5539291609');
@@ -1668,7 +1707,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
             wholesaleMinQty: 4,
             costPrice: 60.00,
             stock: 5,
-            date: new Date().toISOString().slice(0, 10),
+            date: currentDate,
             conta,
             curveClass: 'A'
           };
@@ -1720,7 +1759,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
-                <th className="p-4">Código / MLB</th>
+                <th className="p-4">Data / Código / MLB</th>
                 <th className="p-4">Título do Anúncio</th>
                 <th className="p-4">Preço Varejo Real</th>
                 <th className="p-4 text-center">Ações</th>
@@ -1730,6 +1769,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
               {filteredProducts.map((p) => (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                   <td className="p-4 font-mono">
+                    <div className="text-slate-400 text-[10px]">{p.date || '2026-11-10'}</div>
                     <div className="font-bold text-amber-400">Código: {p.sku}</div>
                     <div className="text-slate-500">MLB: {p.mlb || 'N/D'}</div>
                   </td>
@@ -1753,7 +1793,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
   );
 }
 
-function ManageSheetsTab({ products, onDeleteSheet, currentUser, darkMode }) {
+function ManageSheetsTab({ products, salesList, onDeleteSheet, onDeleteSalesSheet, currentUser, darkMode }) {
   const sheetsMap = {};
   products.forEach(p => {
     const d = p.date || '2026-11-10';
@@ -1762,44 +1802,89 @@ function ManageSheetsTab({ products, onDeleteSheet, currentUser, darkMode }) {
     }
     sheetsMap[d].count += 1;
   });
-
   const sheetsList = Object.values(sheetsMap).sort((a, b) => b.date.localeCompare(a.date));
 
+  const salesSheetsMap = {};
+  salesList.forEach(s => {
+    const d = s.date || '2026-11-10';
+    if (!salesSheetsMap[d]) {
+      salesSheetsMap[d] = { date: d, count: 0 };
+    }
+    salesSheetsMap[d].count += 1;
+  });
+  const salesSheetsList = Object.values(salesSheetsMap).sort((a, b) => b.date.localeCompare(a.date));
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Gerenciar e Excluir Planilhas Lançadas</h2>
-        <p className="text-sm text-slate-400">Exclua lotes inteiros de planilhas sincronizadas.</p>
+        <p className="text-sm text-slate-400">Exclua lotes inteiros de planilhas de anúncios e de vendas sincronizados no Firebase.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {sheetsList.length === 0 ? (
-          <div className="col-span-full p-8 text-center text-slate-500">Nenhuma planilha lançada no sistema.</div>
-        ) : (
-          sheetsList.map((sheet) => (
-            <div key={sheet.date} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl flex flex-col justify-between`}>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-amber-400" />
-                    <span className="font-bold text-slate-200 font-mono text-base">{sheet.date}</span>
+      <div className="space-y-4">
+        <h3 className="text-base font-bold text-amber-400">Planilhas de Anúncios / Peças por Data</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {sheetsList.length === 0 ? (
+            <div className="col-span-full p-6 text-center text-slate-500 border border-slate-800 rounded-2xl">Nenhuma planilha de anúncios lançada.</div>
+          ) : (
+            sheetsList.map((sheet) => (
+              <div key={sheet.date} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl flex flex-col justify-between`}>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-amber-400" />
+                      <span className="font-bold text-slate-200 font-mono text-base">{sheet.date}</span>
+                    </div>
+                    <span className="text-xs font-mono bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-full font-bold">{sheet.count} peças</span>
                   </div>
-                  <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full font-bold">{sheet.count} peças</span>
+                </div>
+                <div className="pt-3 border-t border-slate-800 flex justify-end">
+                  {currentUser?.role === 'admin' ? (
+                    <button onClick={() => onDeleteSheet(sheet.date)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-xs font-bold border border-red-500/25">
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Excluir Lote Anúncios</span>
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-slate-500 italic">Requer Admin</span>
+                  )}
                 </div>
               </div>
-              <div className="pt-3 border-t border-slate-800 flex justify-end">
-                {currentUser?.role === 'admin' ? (
-                  <button onClick={() => onDeleteSheet(sheet.date)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-xs font-bold border border-red-500/25">
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Excluir Planilha</span>
-                  </button>
-                ) : (
-                  <span className="text-[10px] text-slate-500 italic">Requer Admin</span>
-                )}
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-base font-bold text-blue-400">Planilhas de Vendas por Data</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {salesSheetsList.length === 0 ? (
+            <div className="col-span-full p-6 text-center text-slate-500 border border-slate-800 rounded-2xl">Nenhuma planilha de vendas lançada.</div>
+          ) : (
+            salesSheetsList.map((sheet) => (
+              <div key={sheet.date} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 shadow-xl flex flex-col justify-between`}>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-blue-400" />
+                      <span className="font-bold text-slate-200 font-mono text-base">{sheet.date}</span>
+                    </div>
+                    <span className="text-xs font-mono bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full font-bold">{sheet.count} vendas</span>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-slate-800 flex justify-end">
+                  {currentUser?.role === 'admin' ? (
+                    <button onClick={() => onDeleteSalesSheet(sheet.date)} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-xs font-bold border border-red-500/25">
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Excluir Lote Vendas</span>
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-slate-500 italic">Requer Admin</span>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
-        )}
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
