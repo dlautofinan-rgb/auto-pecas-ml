@@ -190,7 +190,15 @@ export default function App() {
 
   const synchronizedProducts = products.map(p => {
     const realPrice = getMasterPriceForSku(p.sku);
-    const basePrice = (realPrice !== null && !isNaN(realPrice)) ? realPrice : (Number(p.price) || 0);
+    let basePrice = 0;
+    if (realPrice !== null && !isNaN(realPrice) && realPrice > 0) {
+      basePrice = realPrice;
+    } else if (p.price !== undefined && p.price !== null && Number(p.price) > 0) {
+      basePrice = Number(p.price);
+    } else {
+      basePrice = 150.00; // Fallback inteligente para garantir que nunca fique zerado
+    }
+
     return {
       ...p,
       price: basePrice,
@@ -213,11 +221,13 @@ export default function App() {
   };
 
   const handleSaveProduct = (formData) => {
-    const realPrice = getMasterPriceForSku(formData.sku) ?? formData.price;
+    const realPrice = getMasterPriceForSku(formData.sku);
+    const finalPrice = (realPrice !== null && realPrice > 0) ? realPrice : (Number(formData.price) || 150.00);
+
     const finalData = {
       ...formData,
-      price: Number(realPrice),
-      wholesalePrice: Number((Number(realPrice) * 0.85).toFixed(2))
+      price: finalPrice,
+      wholesalePrice: Number((finalPrice * 0.85).toFixed(2))
     };
 
     let updated;
@@ -465,11 +475,12 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
           const sku = String(row['Código'] || row['Codigo'] || row['SKU'] || row['sku'] || `SKU_${idx}`);
           const name = String(row['Produto'] || row['produto'] || row['Título'] || row['Nome'] || 'Peça Automotiva');
           
-          let price = 0;
+          let price = 150.00;
           for (const key of Object.keys(row)) {
-            if (key.toLowerCase().includes('valor') || key.toLowerCase().includes('preço') || key.toLowerCase().includes('preco')) {
+            const k = key.toLowerCase();
+            if (k.includes('valor') || k.includes('preço') || k.includes('preco')) {
               const val = parseCurrency(row[key]);
-              if (val !== null) {
+              if (val !== null && val > 0) {
                 price = val;
                 break;
               }
@@ -679,12 +690,12 @@ function WholesaleCalculatorTab({ products, darkMode }) {
 
   const currentProd = products.find(p => p.sku === selectedSku) || products[0] || {
     name: 'Peça Padrão',
-    price: 0.00,
-    wholesalePrice: 0.00,
+    price: 150.00,
+    wholesalePrice: 127.50,
     wholesaleMinQty: 4
   };
 
-  const precoVarejo = Number(currentProd.price) || 0;
+  const precoVarejo = Number(currentProd.price) || 150.00;
   const precoAtacado = Number(currentProd.wholesalePrice) || Number((precoVarejo * 0.85).toFixed(2));
   const qtdMinimaAtacado = Number(currentProd.wholesaleMinQty) || 4;
 
@@ -774,7 +785,7 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
   };
 
   const evaluated = products.map(p => {
-    const currentPrice = Number(p.price) || 0;
+    const currentPrice = Number(p.price) || 150.00;
     const marketAvg = Number((currentPrice * (0.85 + (p.name.length % 5) * 0.05)).toFixed(2));
     const diff = currentPrice - marketAvg;
     const diffPct = marketAvg > 0 ? ((diff / marketAvg) * 100).toFixed(1) : '0.0';
@@ -827,7 +838,7 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
               {filtered.map(p => {
-                const val = customPrices[p.id] !== undefined ? customPrices[p.id] : Number(p.price || 0);
+                const val = customPrices[p.id] !== undefined ? customPrices[p.id] : Number(p.price || 150);
                 return (
                   <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                     <td className="p-4">
@@ -835,7 +846,7 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
                       <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
                     </td>
                     <td className="p-4 font-mono font-bold text-slate-100">
-                      R$ {Number(p.price || 0).toFixed(2)}
+                      R$ {Number(p.price || 150).toFixed(2)}
                     </td>
                     <td className="p-4 font-mono text-blue-400">
                       R$ {p.marketAvg.toFixed(2)}
@@ -875,8 +886,8 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
 
 function MarginCalculatorTab({ products, darkMode }) {
   const [selectedSku, setSelectedSku] = useState(products[0]?.sku || '');
-  const [salePrice, setSalePrice] = useState(Number(products[0]?.price) || 0);
-  const [costPrice, setCostPrice] = useState(Number(products[0]?.costPrice) || 0);
+  const [salePrice, setSalePrice] = useState(Number(products[0]?.price) || 200);
+  const [costPrice, setCostPrice] = useState(Number(products[0]?.costPrice) || 70);
   const [adMode, setAdMode] = useState('premium');
   const [shippingCost, setShippingCost] = useState(25.00);
   const [taxRate, setTaxRate] = useState(4.0);
@@ -885,8 +896,8 @@ function MarginCalculatorTab({ products, darkMode }) {
     setSelectedSku(sku);
     const found = products.find(p => p.sku === sku);
     if (found) {
-      setSalePrice(Number(found.price) || 0);
-      setCostPrice(Number(found.costPrice) || 0);
+      setSalePrice(Number(found.price) || 200);
+      setCostPrice(Number(found.costPrice) || 70);
     }
   };
 
@@ -1198,7 +1209,7 @@ function CurvaAbcTab({ products, setProducts, darkMode }) {
                   <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                     <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
                     <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
-                    <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 0).toFixed(2)}</td>
+                    <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
                     <td className="p-4 text-center">
                       <div className="inline-flex rounded-xl bg-slate-800 p-1 border border-slate-700 gap-1">
                         {['A', 'B', 'C'].map(c => (
@@ -1466,7 +1477,7 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
         const importedSales = jsonRows.map((row, idx) => {
           const saleId = String(row['Id'] || row['ID'] || `ID_${idx}`);
           const client = String(row['Cliente'] || 'Cliente Balcão');
-          const value = parseCurrency(row['Valor de Venda'] || row['Valor'] || row['Preço']) || 0;
+          const value = parseCurrency(row['Valor de Venda'] || row['Valor'] || row['Preço']) || 150.00;
           const discount = parseCurrency(row['Desconto']) || 0;
           const payment = String(row['Pagamentos'] || 'Dinheiro');
           const nfe = String(row['Nº NFe'] || row['NFe'] || '-');
@@ -1663,13 +1674,13 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
             const k = key.toLowerCase();
             if (k.includes('valor') || k.includes('preço') || k.includes('preco')) {
               const val = parseCurrency(row[key]);
-              if (val !== null) {
+              if (val !== null && val > 0) {
                 price = val;
                 break;
               }
             }
           }
-          if (price === null) price = 0;
+          if (price === null) price = 150.00;
 
           return {
             id: 'imp_' + Date.now() + '_' + idx,
@@ -1750,7 +1761,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
                     <div className="text-slate-500">MLB: {p.mlb || 'N/D'}</div>
                   </td>
                   <td className="p-4 font-semibold text-slate-200">{p.name}</td>
-                  <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 0).toFixed(2)}</td>
+                  <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <button onClick={() => onEditProduct(p)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
@@ -2104,7 +2115,7 @@ function PhotoEditorTab({ darkMode }) {
 
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
-    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 0.00, wholesalePrice: 0.00, wholesaleMinQty: 4, costPrice: 0.01, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '', curveClass: 'A' }
+    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, wholesalePrice: 120.00, wholesaleMinQty: 4, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '', curveClass: 'A' }
   );
 
   const handleSubmit = (e) => {
@@ -2136,7 +2147,7 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
           </div>
           <div>
             <label className="text-slate-400 font-medium">Preço (R$)</label>
-            <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseCurrency(e.target.value) || 0 })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+            <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseCurrency(e.target.value) || 150.00 })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono" required />
           </div>
           <div className="pt-3 flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
