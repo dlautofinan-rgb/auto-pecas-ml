@@ -18,55 +18,9 @@ const firebaseConfig = {
   appId: "1:472505973455:web:3b033245b88c8c1f02d5ba"
 };
 
-const DEFAULT_PRODUCTS = [
-  {
-    id: 'prod_1',
-    sku: '26',
-    mlb: 'MLB5539291609',
-    name: 'CONJUNTO / PEÇA AUTOMOTIVA',
-    status: 'Ativo',
-    price: 200.00,
-    wholesalePrice: 170.00,
-    wholesaleMinQty: 4,
-    costPrice: 0.01,
-    stock: 2,
-    date: '2026-11-10',
-    conta: 'DL Auto Peças',
-    currentCat: 'Acessórios para Veículos > Peças Gerais',
-    curveClass: 'A'
-  },
-  {
-    id: 'prod_2',
-    sku: '106',
-    mlb: 'MLB5539291610',
-    name: 'Coletor de Admissão 24581272',
-    status: 'Ativo',
-    price: 250.00,
-    wholesalePrice: 212.50,
-    wholesaleMinQty: 4,
-    costPrice: 0.01,
-    stock: 3,
-    date: '2026-11-10',
-    conta: 'DL Auto Peças',
-    currentCat: 'Acessórios para Veículos > Peças de Motor',
-    curveClass: 'B'
-  }
-];
-
+const DEFAULT_PRODUCTS = [];
 const DEFAULT_SALES = [];
-
-const DEFAULT_RETURNS = [
-  {
-    id: 'ret_1',
-    date: '2026-11-09',
-    sku: '26',
-    name: 'CONJUNTO',
-    value: 200.00,
-    reason: 'Arrependimento / Erro do Comprador',
-    status: 'Reintegrado ao Estoque',
-    notes: 'Peça voltou intacta'
-  }
-];
+const DEFAULT_RETURNS = [];
 
 function aiAnalyzeAutoPart(title = '') {
   const t = title.toLowerCase();
@@ -98,6 +52,14 @@ function aiAnalyzeAutoPart(title = '') {
   }
 
   return { category, oem, optimizedTitle };
+}
+
+function parseCurrency(val) {
+  if (val === undefined || val === null || val === '') return null;
+  if (typeof val === 'number') return val;
+  const cleaned = String(val).replace('R$', '').replace(/\s/g, '').replace('.', '').replace(',', '.');
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? null : parsed;
 }
 
 function NavItem({ id, label, icon: Icon, active, setActive, badge }) {
@@ -219,7 +181,6 @@ export default function App() {
     saveDataToFirebase('returnsList', newList);
   };
 
-  // Vínculo flexível: se encontrar na base geral usa o preço de lá, senão mantém o preço original da peça sem forçar 150
   const getMasterPriceForSku = (sku) => {
     if (!sku) return null;
     const cleanSku = String(sku).trim().toLowerCase();
@@ -229,7 +190,7 @@ export default function App() {
 
   const synchronizedProducts = products.map(p => {
     const realPrice = getMasterPriceForSku(p.sku);
-    const basePrice = realPrice !== null && !isNaN(realPrice) && realPrice > 0 ? realPrice : (Number(p.price) || 0);
+    const basePrice = (realPrice !== null && !isNaN(realPrice)) ? realPrice : (Number(p.price) || 0);
     return {
       ...p,
       price: basePrice,
@@ -252,7 +213,7 @@ export default function App() {
   };
 
   const handleSaveProduct = (formData) => {
-    const realPrice = getMasterPriceForSku(formData.sku) || formData.price;
+    const realPrice = getMasterPriceForSku(formData.sku) ?? formData.price;
     const finalData = {
       ...formData,
       price: Number(realPrice),
@@ -504,12 +465,19 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
           const sku = String(row['Código'] || row['Codigo'] || row['SKU'] || row['sku'] || `SKU_${idx}`);
           const name = String(row['Produto'] || row['produto'] || row['Título'] || row['Nome'] || 'Peça Automotiva');
           
-          const rawPrice = row['Valor Venda (R$)'] || row['Valor Venda'] || row['Preço'] || row['Preco'] || row['Valor'] || 0;
-          const price = Number(String(rawPrice).replace('R$', '').replace(',', '.')) || 0;
+          let price = 0;
+          for (const key of Object.keys(row)) {
+            if (key.toLowerCase().includes('valor') || key.toLowerCase().includes('preço') || key.toLowerCase().includes('preco')) {
+              const val = parseCurrency(row[key]);
+              if (val !== null) {
+                price = val;
+                break;
+              }
+            }
+          }
 
           const rawCost = row['Custo (R$)'] || row['Custo'] || 0.01;
-          const costPrice = Number(String(rawCost).replace('R$', '').replace(',', '.')) || 0.01;
-
+          const costPrice = parseCurrency(rawCost) || 0.01;
           const stock = Number(row['Estoque'] || row['Quantidade'] || 5);
 
           return {
@@ -525,7 +493,7 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
         });
 
         setMasterInventory(imported);
-        setImportStatus(`Sucesso! ${imported.length} itens salvos no Firebase na nuvem[cite: 5]. Preços vinculados.`);
+        setImportStatus(`Sucesso! ${imported.length} itens salvos no Firebase na nuvem. Preços vinculados.`);
       } catch (err) {
         console.error(err);
         setImportStatus('Erro ao ler a planilha de estoque.');
@@ -544,7 +512,7 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
       <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Base de Estoque Geral (Código, Produto e Valor)</h2>
-          <p className="text-sm text-slate-400">Jogue sua planilha de estoque[cite: 5]. Sincronizado automaticamente com o Firebase da equipe.</p>
+          <p className="text-sm text-slate-400">Jogue sua planilha de estoque. Sincronizado automaticamente com o Firebase da equipe.</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -593,11 +561,11 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
-                <th className="p-4">Código (SKU)[cite: 5]</th>
-                <th className="p-4">Produto[cite: 5]</th>
-                <th className="p-4">Estoque[cite: 5]</th>
-                <th className="p-4">Custo (R$)[cite: 5]</th>
-                <th className="p-4 text-right">Valor Venda (R$)[cite: 5]</th>
+                <th className="p-4">Código (SKU)</th>
+                <th className="p-4">Produto</th>
+                <th className="p-4">Estoque</th>
+                <th className="p-4">Custo (R$)</th>
+                <th className="p-4 text-right">Valor Venda (R$)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
@@ -711,12 +679,12 @@ function WholesaleCalculatorTab({ products, darkMode }) {
 
   const currentProd = products.find(p => p.sku === selectedSku) || products[0] || {
     name: 'Peça Padrão',
-    price: 150.00,
-    wholesalePrice: 127.50,
+    price: 0.00,
+    wholesalePrice: 0.00,
     wholesaleMinQty: 4
   };
 
-  const precoVarejo = Number(currentProd.price) || 150.00;
+  const precoVarejo = Number(currentProd.price) || 0;
   const precoAtacado = Number(currentProd.wholesalePrice) || Number((precoVarejo * 0.85).toFixed(2));
   const qtdMinimaAtacado = Number(currentProd.wholesaleMinQty) || 4;
 
@@ -806,10 +774,10 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
   };
 
   const evaluated = products.map(p => {
-    const currentPrice = Number(p.price) || 150.00;
+    const currentPrice = Number(p.price) || 0;
     const marketAvg = Number((currentPrice * (0.85 + (p.name.length % 5) * 0.05)).toFixed(2));
     const diff = currentPrice - marketAvg;
-    const diffPct = ((diff / marketAvg) * 100).toFixed(1);
+    const diffPct = marketAvg > 0 ? ((diff / marketAvg) * 100).toFixed(1) : '0.0';
 
     let status = 'Competitivo';
     let color = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
@@ -859,7 +827,7 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
               {filtered.map(p => {
-                const val = customPrices[p.id] !== undefined ? customPrices[p.id] : (Number(p.price) || 150);
+                const val = customPrices[p.id] !== undefined ? customPrices[p.id] : Number(p.price || 0);
                 return (
                   <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                     <td className="p-4">
@@ -867,7 +835,7 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
                       <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
                     </td>
                     <td className="p-4 font-mono font-bold text-slate-100">
-                      R$ {Number(p.price || 150).toFixed(2)}
+                      R$ {Number(p.price || 0).toFixed(2)}
                     </td>
                     <td className="p-4 font-mono text-blue-400">
                       R$ {p.marketAvg.toFixed(2)}
@@ -907,8 +875,8 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
 
 function MarginCalculatorTab({ products, darkMode }) {
   const [selectedSku, setSelectedSku] = useState(products[0]?.sku || '');
-  const [salePrice, setSalePrice] = useState(Number(products[0]?.price) || 200);
-  const [costPrice, setCostPrice] = useState(Number(products[0]?.costPrice) || 70);
+  const [salePrice, setSalePrice] = useState(Number(products[0]?.price) || 0);
+  const [costPrice, setCostPrice] = useState(Number(products[0]?.costPrice) || 0);
   const [adMode, setAdMode] = useState('premium');
   const [shippingCost, setShippingCost] = useState(25.00);
   const [taxRate, setTaxRate] = useState(4.0);
@@ -917,8 +885,8 @@ function MarginCalculatorTab({ products, darkMode }) {
     setSelectedSku(sku);
     const found = products.find(p => p.sku === sku);
     if (found) {
-      setSalePrice(Number(found.price) || 200);
-      setCostPrice(Number(found.costPrice) || 70);
+      setSalePrice(Number(found.price) || 0);
+      setCostPrice(Number(found.costPrice) || 0);
     }
   };
 
@@ -1230,7 +1198,7 @@ function CurvaAbcTab({ products, setProducts, darkMode }) {
                   <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                     <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
                     <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
-                    <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
+                    <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 0).toFixed(2)}</td>
                     <td className="p-4 text-center">
                       <div className="inline-flex rounded-xl bg-slate-800 p-1 border border-slate-700 gap-1">
                         {['A', 'B', 'C'].map(c => (
@@ -1498,8 +1466,8 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
         const importedSales = jsonRows.map((row, idx) => {
           const saleId = String(row['Id'] || row['ID'] || `ID_${idx}`);
           const client = String(row['Cliente'] || 'Cliente Balcão');
-          const value = Number(String(row['Valor de Venda'] || row['Valor'] || 0).replace('R$', '').replace(',', '.')) || 0;
-          const discount = Number(String(row['Desconto'] || 0).replace('R$', '').replace(',', '.')) || 0;
+          const value = parseCurrency(row['Valor de Venda'] || row['Valor'] || row['Preço']) || 0;
+          const discount = parseCurrency(row['Desconto']) || 0;
           const payment = String(row['Pagamentos'] || 'Dinheiro');
           const nfe = String(row['Nº NFe'] || row['NFe'] || '-');
           const trackingCode = String(row['Código de Rastreio'] || row['Rastreio'] || 'BR' + Math.floor(100000000 + Math.random() * 900000000) + 'X');
@@ -1690,8 +1658,18 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           const status = String(row['Status'] || 'Ativo');
           const conta = String(row['Conta'] || 'DL Auto Peças');
           
-          const rawPrice = row['Valor Venda (R$)'] || row['Preço'] || row['Preco'] || row['Valor'] || 0;
-          const price = Number(String(rawPrice).replace('R$', '').replace(',', '.')) || 0;
+          let price = null;
+          for (const key of Object.keys(row)) {
+            const k = key.toLowerCase();
+            if (k.includes('valor') || k.includes('preço') || k.includes('preco')) {
+              const val = parseCurrency(row[key]);
+              if (val !== null) {
+                price = val;
+                break;
+              }
+            }
+          }
+          if (price === null) price = 0;
 
           return {
             id: 'imp_' + Date.now() + '_' + idx,
@@ -2126,7 +2104,7 @@ function PhotoEditorTab({ darkMode }) {
 
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
-    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, wholesalePrice: 120.00, wholesaleMinQty: 4, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '', curveClass: 'A' }
+    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 0.00, wholesalePrice: 0.00, wholesaleMinQty: 4, costPrice: 0.01, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '', curveClass: 'A' }
   );
 
   const handleSubmit = (e) => {
@@ -2155,6 +2133,10 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
               <label className="text-slate-400 font-medium">MLB</label>
               <input type="text" value={formData.mlb} onChange={(e) => setFormData({ ...formData, mlb: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
             </div>
+          </div>
+          <div>
+            <label className="text-slate-400 font-medium">Preço (R$)</label>
+            <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseCurrency(e.target.value) || 0 })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
           </div>
           <div className="pt-3 flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
