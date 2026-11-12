@@ -28,7 +28,37 @@ function aiAnalyzeAutoPart(title = '') {
   let oem = 'OEM-GEN-99';
   let optimizedTitle = `${title.slice(0, 48)} - Orig`;
 
-  if (t.includes('coletor') || t.includes('admissao') || t.includes('injecao') || t.includes('bico') || t.includes('motor') || t.includes('correia') || t.includes('tensor') || t.includes('radiador') || t.includes('reservatorio') || t.includes('freio') || t.includes('pastilha') || t.includes('disco') || t.includes('suspensao') || t.includes('amortecedor') || t.includes('bandeja')) {
+  // Detecção refinada para separar as 4 seções com base no nome/título da peça
+  if (
+    t.includes('alternador') || t.includes('bateria') || t.includes('farol') || 
+    t.includes('lanterna') || t.includes('sensor') || t.includes('modulo') || 
+    t.includes('chave') || t.includes('comutador') || t.includes('motor de arranque') ||
+    t.includes('bobina') || t.includes('vela') || t.includes('cabo') || t.includes('fusivel')
+  ) {
+    section = 'Elétrica';
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Elétrica > Alternadores e Componentes';
+    oem = 'OEM-EL-5520';
+    optimizedTitle = `${title.slice(0, 45)} Eletrico`;
+  } else if (
+    t.includes('porta') || t.includes('parachoque') || t.includes('capo') || 
+    t.includes('lama') || t.includes('retrovisor') || t.includes('grade') || 
+    t.includes('paralama') || t.includes('tampa') || t.includes('painel frontal')
+  ) {
+    section = 'Lataria';
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Exterior > Parachoques e Grelhas';
+    oem = 'OEM-LAT-7710';
+    optimizedTitle = `${title.slice(0, 48)} Lataria`;
+  } else if (
+    t.includes('painel') || t.includes('volante') || t.includes('tapete') || 
+    t.includes('banco') || t.includes('acabamento') || t.includes('maçaneta') || 
+    t.includes('forro') || t.includes('console') || t.includes('espelho interno')
+  ) {
+    section = 'Acabamentos';
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Interior > Painéis e Acabamentos';
+    oem = 'OEM-ACAB-3301';
+    optimizedTitle = `${title.slice(0, 48)} Acabamento`;
+  } else {
+    // Padrão para Mecânica
     section = 'Mecânica';
     if (t.includes('coletor') || t.includes('admissao') || t.includes('injecao') || t.includes('bico')) {
       category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Injeção > Coletores';
@@ -51,21 +81,6 @@ function aiAnalyzeAutoPart(title = '') {
       oem = 'OEM-MOT-1002';
       optimizedTitle = `${title.slice(0, 45)} Motor Orig`;
     }
-  } else if (t.includes('alternador') || t.includes('bateria') || t.includes('farol') || t.includes('lanterna') || t.includes('sensor') || t.includes('modulo') || t.includes('chave')) {
-    section = 'Elétrica';
-    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Elétrica > Alternadores e Componentes';
-    oem = 'OEM-EL-5520';
-    optimizedTitle = `${title.slice(0, 45)} Eletrico`;
-  } else if (t.includes('porta') || t.includes('parachoque') || t.includes('capo') || t.includes('lama') || t.includes('retrovisor') || t.includes('grade')) {
-    section = 'Lataria';
-    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Exterior > Parachoques e Grelhas';
-    oem = 'OEM-LAT-7710';
-    optimizedTitle = `${title.slice(0, 48)} Lataria`;
-  } else if (t.includes('painel') || t.includes('volante') || t.includes('tapete') || t.includes('banco') || t.includes('acabamento') || t.includes('maçaneta')) {
-    section = 'Acabamentos';
-    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Interior > Painéis e Acabamentos';
-    oem = 'OEM-ACAB-3301';
-    optimizedTitle = `${title.slice(0, 48)} Acabamento`;
   }
 
   if (optimizedTitle.length > 60) {
@@ -1317,8 +1332,8 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
-              <th className="p-4">Código / Peça</th>
-              <th className="p-4">Seção Atribuída</th>
+              <th className="p-4">Código (SKU) / Título</th>
+              <th className="p-4">Seção</th>
               <th className="p-4">Categoria Oficial Mercado Livre</th>
               <th className="p-4 text-center">Ação IA</th>
             </tr>
@@ -1329,7 +1344,10 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
               const sec = p.section || analysis.section;
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
+                  <td className="p-4">
+                    <div className="font-mono font-bold text-amber-400">SKU: {p.sku}</div>
+                    <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
+                  </td>
                   <td className="p-4">
                     <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold">
                       {sec}
@@ -1404,7 +1422,7 @@ function AssistantTab({ products, setProducts, darkMode }) {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
-              <th className="p-4">Código / Peça</th>
+              <th className="p-4">Código (SKU)</th>
               <th className="p-4">Título Atual</th>
               <th className="p-4">Título Sugerido pela IA (≤ 60 chars)</th>
               <th className="p-4 text-center">Ação IA</th>
@@ -1416,7 +1434,7 @@ function AssistantTab({ products, setProducts, darkMode }) {
               const suggested = optimizedTitles[p.id] || analysis.optimizedTitle;
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku}</td>
+                  <td className="p-4 font-mono font-bold text-amber-400">{p.sku}</td>
                   <td className="p-4 font-semibold text-slate-200">{p.name}</td>
                   <td className="p-4 font-mono text-emerald-400 font-bold">
                     {suggested} <span className="text-[10px] text-slate-400 font-normal">({suggested.length} chars)</span>
@@ -1478,7 +1496,7 @@ function CategoriesTab({ products, setProducts, darkMode }) {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
-              <th className="p-4">Código / Peça</th>
+              <th className="p-4">Código (SKU) / Título</th>
               <th className="p-4">Seção</th>
               <th className="p-4">Categoria Oficial Mercado Livre</th>
               <th className="p-4 text-center">Ação IA</th>
@@ -1491,7 +1509,10 @@ function CategoriesTab({ products, setProducts, darkMode }) {
               const sec = p.section || analysis.section;
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
+                  <td className="p-4">
+                    <div className="font-mono font-bold text-amber-400">SKU: {p.sku}</div>
+                    <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
+                  </td>
                   <td className="p-4 font-bold text-blue-400">{sec}</td>
                   <td className="p-4 text-emerald-400 font-mono font-semibold">{activeCat}</td>
                   <td className="p-4 text-center">
@@ -1818,7 +1839,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
-                <th className="p-4">Col A / D (Código & Título)</th>
+                <th className="p-4">Col A / D (SKU & Título)</th>
                 <th className="p-4">Seção</th>
                 <th className="p-4">Col F (Estoque)</th>
                 <th className="p-4">Col H (Preço Varejo / Atacado)</th>
@@ -1833,7 +1854,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
                 return (
                   <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                     <td className="p-4">
-                      <div className="font-bold text-amber-400 font-mono">Código: {p.sku}</div>
+                      <div className="font-bold text-amber-400 font-mono">SKU: {p.sku}</div>
                       <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
                     </td>
                     <td className="p-4">
@@ -2030,7 +2051,7 @@ function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMo
         <Search className="w-4 h-4 text-slate-500" />
         <input
           type="text"
-          placeholder="Pesquisar por Peça ou Código..."
+          placeholder="Pesquisar por Peça ou SKU..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-transparent text-sm text-white focus:outline-none"
@@ -2043,7 +2064,7 @@ function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMo
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
                 <th className="p-4">Data</th>
-                <th className="p-4">Peça / Código</th>
+                <th className="p-4">Peça / SKU</th>
                 <th className="p-4">Motivo</th>
                 <th className="p-4 text-right">Valor</th>
                 <th className="p-4">Status</th>
@@ -2061,7 +2082,7 @@ function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMo
                     <td className="p-4 font-mono text-slate-400">{r.date}</td>
                     <td className="p-4">
                       <div className="font-bold text-slate-200">{r.name}</div>
-                      <div className="text-amber-400 font-mono text-[10px]">Código: {r.sku}</div>
+                      <div className="text-amber-400 font-mono text-[10px]">SKU: {r.sku}</div>
                     </td>
                     <td className="p-4 text-slate-300">{r.reason}</td>
                     <td className="p-4 text-right font-mono font-bold text-red-400">R$ {Number(r.value || 0).toFixed(2)}</td>
@@ -2092,7 +2113,7 @@ function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMo
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 font-medium">Código (SKU)</label>
+                  <label className="text-slate-400 font-medium">SKU</label>
                   <input type="text" placeholder="Ex: 26" value={newReturn.sku} onChange={(e) => setNewReturn({ ...newReturn, sku: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
                 </div>
                 <div>
@@ -2220,7 +2241,7 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-slate-400 font-medium">Código (SKU)</label>
+              <label className="text-slate-400 font-medium">SKU</label>
               <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
             </div>
             <div>
