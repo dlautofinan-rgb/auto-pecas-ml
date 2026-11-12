@@ -23,41 +23,56 @@ const DEFAULT_RETURNS = [];
 function aiAnalyzeAutoPart(title = '') {
   const t = title.toLowerCase();
   
+  let section = 'Mecânica';
   let category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Peças de Motor';
   let oem = 'OEM-GEN-99';
   let optimizedTitle = `${title.slice(0, 48)} - Orig`;
 
-  if (t.includes('coletor') || t.includes('admissao') || t.includes('injecao') || t.includes('bico')) {
-    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Injeção > Coletores';
-    oem = 'OEM-INJ-8821';
-    optimizedTitle = `${title.slice(0, 45)} Orig Perf`;
-  } else if (t.includes('radiador') || t.includes('reservatorio') || t.includes('agua') || t.includes('arrefecimento')) {
-    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Arrefecimento > Reservatórios e Radiadores';
-    oem = 'OEM-ARR-4410';
-    optimizedTitle = `${title.slice(0, 45)} Arrefec Orig`;
-  } else if (t.includes('freio') || t.includes('pastilha') || t.includes('disco')) {
-    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios > Pastilhas e Discos';
-    oem = 'OEM-FR-3320';
-    optimizedTitle = `${title.slice(0, 45)} Freio Comp`;
-  } else if (t.includes('suspensao') || t.includes('amortecedor') || t.includes('bandeja')) {
-    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Suspensão e Direção';
-    oem = 'OEM-SUS-1190';
-    optimizedTitle = `${title.slice(0, 45)} Suspensão`;
-  } else if (t.includes('correia') || t.includes('tensor') || t.includes('alternador')) {
-    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Correias e Tensores';
-    oem = 'OEM-COR-5502';
-    optimizedTitle = `${title.slice(0, 45)} Correia Orig`;
-  } else if (t.includes('porta') || t.includes('traseira') || t.includes('dianteira')) {
-    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Exterior > Portas';
-    oem = 'OEM-EXT-7701';
+  if (t.includes('coletor') || t.includes('admissao') || t.includes('injecao') || t.includes('bico') || t.includes('motor') || t.includes('correia') || t.includes('tensor') || t.includes('radiador') || t.includes('reservatorio') || t.includes('freio') || t.includes('pastilha') || t.includes('disco') || t.includes('suspensao') || t.includes('amortecedor') || t.includes('bandeja')) {
+    section = 'Mecânica';
+    if (t.includes('coletor') || t.includes('admissao') || t.includes('injecao') || t.includes('bico')) {
+      category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Injeção > Coletores';
+      oem = 'OEM-INJ-8821';
+      optimizedTitle = `${title.slice(0, 45)} Orig Perf`;
+    } else if (t.includes('radiador') || t.includes('reservatorio') || t.includes('agua') || t.includes('arrefecimento')) {
+      category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Arrefecimento > Reservatórios e Radiadores';
+      oem = 'OEM-ARR-4410';
+      optimizedTitle = `${title.slice(0, 45)} Arrefec Orig`;
+    } else if (t.includes('freio') || t.includes('pastilha') || t.includes('disco')) {
+      category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios > Pastilhas e Discos';
+      oem = 'OEM-FR-3320';
+      optimizedTitle = `${title.slice(0, 45)} Freio Comp`;
+    } else if (t.includes('suspensao') || t.includes('amortecedor') || t.includes('bandeja')) {
+      category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Suspensão e Direção';
+      oem = 'OEM-SUS-1190';
+      optimizedTitle = `${title.slice(0, 45)} Suspensão`;
+    } else {
+      category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Peças de Motor';
+      oem = 'OEM-MOT-1002';
+      optimizedTitle = `${title.slice(0, 45)} Motor Orig`;
+    }
+  } else if (t.includes('alternador') || t.includes('bateria') || t.includes('farol') || t.includes('lanterna') || t.includes('sensor') || t.includes('modulo') || t.includes('chave')) {
+    section = 'Elétrica';
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Elétrica > Alternadores e Componentes';
+    oem = 'OEM-EL-5520';
+    optimizedTitle = `${title.slice(0, 45)} Eletrico`;
+  } else if (t.includes('porta') || t.includes('parachoque') || t.includes('capo') || t.includes('lama') || t.includes('retrovisor') || t.includes('grade')) {
+    section = 'Lataria';
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Exterior > Parachoques e Grelhas';
+    oem = 'OEM-LAT-7710';
     optimizedTitle = `${title.slice(0, 48)} Lataria`;
+  } else if (t.includes('painel') || t.includes('volante') || t.includes('tapete') || t.includes('banco') || t.includes('acabamento') || t.includes('maçaneta')) {
+    section = 'Acabamentos';
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Interior > Painéis e Acabamentos';
+    oem = 'OEM-ACAB-3301';
+    optimizedTitle = `${title.slice(0, 48)} Acabamento`;
   }
 
   if (optimizedTitle.length > 60) {
     optimizedTitle = optimizedTitle.slice(0, 60);
   }
 
-  return { category, oem, optimizedTitle };
+  return { section, category, oem, optimizedTitle };
 }
 
 function parseCurrency(val) {
@@ -211,6 +226,7 @@ export default function App() {
       price: basePrice,
       wholesalePrice,
       wholesaleMinQty: Number(p.wholesaleMinQty) || 4,
+      section: p.section || aiData.section,
       currentCat: p.currentCat || aiData.category
     };
   });
@@ -239,6 +255,7 @@ export default function App() {
       price: finalPrice,
       wholesalePrice: Number((finalPrice * 0.85).toFixed(2)),
       wholesaleMinQty: Number(formData.wholesaleMinQty) || 4,
+      section: formData.section || aiData.section,
       currentCat: formData.currentCat || aiData.category
     };
 
@@ -346,11 +363,11 @@ export default function App() {
             <NavItem id="faq-helper" label="FAQ & Compatibilidade (IA)" icon={MessageSquare} active={activeTab} setActive={setActiveTab} />
             <NavItem id="organic-seo" label="Otimizador SEO Orgânico" icon={Zap} active={activeTab} setActive={setActiveTab} />
             <NavItem id="curva-abc" label="Curva ABC de Estoque" icon={PieChart} active={activeTab} setActive={setActiveTab} />
-            <NavItem id="category-audit" label="Auditoria de Categorias (IA)" icon={CheckSquare} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="category-audit" label="Auditoria & Categorias por Seção" icon={CheckSquare} active={activeTab} setActive={setActiveTab} />
             <NavItem id="manage-sheets" label="Gerenciar / Excluir Planilhas" icon={Trash2} active={activeTab} setActive={setActiveTab} />
             <NavItem id="team-guide" label="Guia & Motivos de Status" icon={HelpCircle} active={activeTab} setActive={setActiveTab} />
             <NavItem id="assistant" label="Editor de Títulos (IA <= 60 chars)" icon={Sparkles} active={activeTab} setActive={setActiveTab} />
-            <NavItem id="categories" label="Editor de Categorias & OEM (IA)" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="categories" label="Editor Categorias (Mec, Elet, Lat, Acab)" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
             <NavItem id="returns" label="Controle Devoluções" icon={RotateCcw} active={activeTab} setActive={setActiveTab} badge={returnsList.length} />
             <NavItem id="photo" label="Editor Fundo Branco" icon={ImageIcon} active={activeTab} setActive={setActiveTab} />
           </nav>
@@ -477,11 +494,7 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Leitura exata baseada nas colunas solicitadas:
-        // Coluna A = SKU (Indice 0)
-        // Coluna D = TITULO (Indice 3)
-        // Coluna F = ESTOQUE (Indice 5)
-        // Coluna H = VALOR (Indice 7)
+        // Coluna A (0): SKU | Coluna D (3): Título | Coluna F (5): Estoque | Coluna H (7): Valor
         const rows = window.XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
         if (rows.length === 0) {
@@ -501,6 +514,8 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
           const valParsed = parseCurrency(rawVal);
           const price = (valParsed !== null && valParsed > 0) ? valParsed : 150.00;
 
+          const aiData = aiAnalyzeAutoPart(name);
+
           return {
             id: 'master_' + Date.now() + '_' + idx,
             sku,
@@ -508,6 +523,7 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
             price,
             costPrice: Number((price * 0.4).toFixed(2)),
             stock,
+            section: aiData.section,
             wholesalePrice: Number((price * 0.85).toFixed(2)),
             wholesaleMinQty: 4
           };
@@ -1258,6 +1274,7 @@ function CurvaAbcTab({ products, setProducts, darkMode }) {
 }
 
 function CategoryAuditTab({ products, setProducts, darkMode }) {
+  const [selectedSection, setSelectedSection] = useState('ALL');
   const [auditStatus, setAuditStatus] = useState({});
 
   const handleAiAudit = (id, name) => {
@@ -1267,17 +1284,33 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
         ...prev,
         [id]: { 
           status: 'Validado por IA', 
-          message: `Categoria ideal detectada: ${analysis.category}. Peça em conformidade com o Mercado Livre.` 
+          message: `Seção: ${analysis.section} | Categoria: ${analysis.category}` 
         }
       }));
     }, 400);
   };
 
+  const filtered = selectedSection === 'ALL' ? products : products.filter(p => (p.section || aiAnalyzeAutoPart(p.name).section) === selectedSection);
+
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Auditoria e Comparação de Categorias (com IA)</h2>
-        <p className="text-sm text-slate-400">Audite e valide se suas peças estão nas categorias corretas exigidas pelo Mercado Livre utilizando inteligência artificial.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Auditoria & Categorias por Seção (Mecânica, Elétrica, Lataria, Acabamentos)</h2>
+        <p className="text-sm text-slate-400">Filtre e audite suas peças divididas exatamente nas quatro grandes seções do setor automotivo.</p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {['ALL', 'Mecânica', 'Elétrica', 'Lataria', 'Acabamentos'].map(sec => (
+          <button
+            key={sec}
+            onClick={() => setSelectedSection(sec)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              selectedSection === sec ? 'bg-amber-400 text-slate-950 shadow-md' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            {sec === 'ALL' ? 'Todas as Seções' : sec}
+          </button>
+        ))}
       </div>
 
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
@@ -1285,24 +1318,24 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
               <th className="p-4">Código / Peça</th>
+              <th className="p-4">Seção Atribuída</th>
               <th className="p-4">Categoria Oficial Mercado Livre</th>
-              <th className="p-4 text-center">Status Auditoria IA</th>
               <th className="p-4 text-center">Ação IA</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50 text-xs">
-            {products.map(p => {
-              const audit = auditStatus[p.id] || { status: 'Pendente de Verificação', message: 'Clique para auditar via IA' };
+            {filtered.map(p => {
               const analysis = aiAnalyzeAutoPart(p.name);
+              const sec = p.section || analysis.section;
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                   <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
-                  <td className="p-4 font-mono text-slate-300">{p.currentCat || analysis.category}</td>
-                  <td className="p-4 text-center">
-                    <span className={`px-3 py-1 rounded-full font-bold ${audit.status === 'Validado por IA' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                      {audit.status}
+                  <td className="p-4">
+                    <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold">
+                      {sec}
                     </span>
                   </td>
+                  <td className="p-4 font-mono text-slate-300">{p.currentCat || analysis.category}</td>
                   <td className="p-4 text-center">
                     <button
                       onClick={() => handleAiAudit(p.id, p.name)}
@@ -1408,6 +1441,7 @@ function AssistantTab({ products, setProducts, darkMode }) {
 }
 
 function CategoriesTab({ products, setProducts, darkMode }) {
+  const [selectedSection, setSelectedSection] = useState('ALL');
   const [mappedCategories, setMappedCategories] = useState({});
 
   const handleAiCategorize = (id, title = '') => {
@@ -1417,11 +1451,27 @@ function CategoriesTab({ products, setProducts, darkMode }) {
     }, 400);
   };
 
+  const filtered = selectedSection === 'ALL' ? products : products.filter(p => (p.section || aiAnalyzeAutoPart(p.name).section) === selectedSection);
+
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Editor de Categorias & OEM (Mapeamento Inteligente com IA)</h2>
-        <p className="text-sm text-slate-400">Mapeamento automático analisando rigorosamente as exigências e árvores de categorias do Mercado Livre para cada peça.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Editor de Categorias (Mecânica, Elétrica, Lataria, Acabamentos)</h2>
+        <p className="text-sm text-slate-400">Gerencie e corrija as categorias e seções oficiais do Mercado Livre para cada peça do estoque.</p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {['ALL', 'Mecânica', 'Elétrica', 'Lataria', 'Acabamentos'].map(sec => (
+          <button
+            key={sec}
+            onClick={() => setSelectedSection(sec)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              selectedSection === sec ? 'bg-amber-400 text-slate-950 shadow-md' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            {sec === 'ALL' ? 'Todas as Seções' : sec}
+          </button>
+        ))}
       </div>
 
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
@@ -1429,20 +1479,21 @@ function CategoriesTab({ products, setProducts, darkMode }) {
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
               <th className="p-4">Código / Peça</th>
-              <th className="p-4">Categoria Atribuída (Mercado Livre)</th>
-              <th className="p-4">Código OEM</th>
+              <th className="p-4">Seção</th>
+              <th className="p-4">Categoria Oficial Mercado Livre</th>
               <th className="p-4 text-center">Ação IA</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50 text-xs">
-            {products.map(p => {
+            {filtered.map(p => {
               const analysis = aiAnalyzeAutoPart(p.name);
               const activeCat = mappedCategories[p.id] || p.currentCat || analysis.category;
+              const sec = p.section || analysis.section;
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                   <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
+                  <td className="p-4 font-bold text-blue-400">{sec}</td>
                   <td className="p-4 text-emerald-400 font-mono font-semibold">{activeCat}</td>
-                  <td className="p-4 font-mono text-blue-400">{analysis.oem}</td>
                   <td className="p-4 text-center">
                     <button
                       onClick={() => handleAiCategorize(p.id, p.name)}
@@ -1707,6 +1758,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
             sku,
             mlb,
             name,
+            section: aiData.section,
             currentCat: aiData.category,
             status: 'Ativo',
             price,
@@ -1767,6 +1819,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
                 <th className="p-4">Col A / D (Código & Título)</th>
+                <th className="p-4">Seção</th>
                 <th className="p-4">Col F (Estoque)</th>
                 <th className="p-4">Col H (Preço Varejo / Atacado)</th>
                 <th className="p-4 text-center">Ações</th>
@@ -1776,11 +1829,15 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
               {filteredProducts.map((p) => {
                 const pVarejo = Number(p.price || 150);
                 const pAtacado = Number(p.wholesalePrice || (pVarejo * 0.85));
+                const sec = p.section || aiAnalyzeAutoPart(p.name).section;
                 return (
                   <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                     <td className="p-4">
                       <div className="font-bold text-amber-400 font-mono">Código: {p.sku}</div>
                       <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
+                    </td>
+                    <td className="p-4">
+                      <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold">{sec}</span>
                     </td>
                     <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
                     <td className="p-4 font-mono">
@@ -2141,7 +2198,7 @@ function PhotoEditorTab({ darkMode }) {
 
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
-    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, wholesalePrice: 127.50, wholesaleMinQty: 4, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '', curveClass: 'A' }
+    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, wholesalePrice: 127.50, wholesaleMinQty: 4, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', section: 'Mecânica', currentCat: '', curveClass: 'A' }
   );
 
   const handleSubmit = (e) => {
@@ -2167,8 +2224,13 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
               <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
             </div>
             <div>
-              <label className="text-slate-400 font-medium">MLB</label>
-              <input type="text" value={formData.mlb} onChange={(e) => setFormData({ ...formData, mlb: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
+              <label className="text-slate-400 font-medium">Seção</label>
+              <select value={formData.section} onChange={(e) => setFormData({ ...formData, section: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white">
+                <option value="Mecânica">Mecânica</option>
+                <option value="Elétrica">Elétrica</option>
+                <option value="Lataria">Lataria</option>
+                <option value="Acabamentos">Acabamentos</option>
+              </select>
             </div>
           </div>
           <div>
