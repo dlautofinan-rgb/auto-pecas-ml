@@ -25,60 +25,54 @@ function aiAnalyzeAutoPart(title = '') {
   
   let section = 'Mecânica';
   let category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Peças de Motor';
-  let oem = 'OEM-GEN-99';
   let optimizedTitle = `${title.slice(0, 48)} - Orig`;
 
-  // Detecção refinada para separar as 4 seções com base no nome/título da peça
+  // Motor rígido de classificação por Seção e Categoria Oficial do Mercado Livre
   if (
     t.includes('alternador') || t.includes('bateria') || t.includes('farol') || 
     t.includes('lanterna') || t.includes('sensor') || t.includes('modulo') || 
-    t.includes('chave') || t.includes('comutador') || t.includes('motor de arranque') ||
-    t.includes('bobina') || t.includes('vela') || t.includes('cabo') || t.includes('fusivel')
+    t.includes('chave de seta') || t.includes('comutador') || t.includes('motor de arranque') ||
+    t.includes('bobina') || t.includes('vela') || t.includes('cabo de vela') || 
+    t.includes('fusivel') || t.includes('relé') || t.includes('painel de instrumentos') ||
+    t.includes('buzina') || t.includes('atuador') || t.includes('central')
   ) {
     section = 'Elétrica';
     category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Elétrica > Alternadores e Componentes';
-    oem = 'OEM-EL-5520';
     optimizedTitle = `${title.slice(0, 45)} Eletrico`;
   } else if (
     t.includes('porta') || t.includes('parachoque') || t.includes('capo') || 
     t.includes('lama') || t.includes('retrovisor') || t.includes('grade') || 
-    t.includes('paralama') || t.includes('tampa') || t.includes('painel frontal')
+    t.includes('paralama') || t.includes('tampa traseira') || t.includes('painel frontal') ||
+    t.includes('maçaneta externa') || t.includes('friso') || t.includes('alma')
   ) {
     section = 'Lataria';
     category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Exterior > Parachoques e Grelhas';
-    oem = 'OEM-LAT-7710';
     optimizedTitle = `${title.slice(0, 48)} Lataria`;
   } else if (
-    t.includes('painel') || t.includes('volante') || t.includes('tapete') || 
-    t.includes('banco') || t.includes('acabamento') || t.includes('maçaneta') || 
-    t.includes('forro') || t.includes('console') || t.includes('espelho interno')
+    t.includes('painel lateral') || t.includes('volante') || t.includes('tapete') || 
+    t.includes('banco') || t.includes('acabamento') || t.includes('maçaneta interna') || 
+    t.includes('forro de porta') || t.includes('console') || t.includes('espelho interno') ||
+    t.includes('teto') || t.includes('porta-luvas') || t.includes('cintos')
   ) {
     section = 'Acabamentos';
     category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Interior > Painéis e Acabamentos';
-    oem = 'OEM-ACAB-3301';
     optimizedTitle = `${title.slice(0, 48)} Acabamento`;
   } else {
-    // Padrão para Mecânica
     section = 'Mecânica';
     if (t.includes('coletor') || t.includes('admissao') || t.includes('injecao') || t.includes('bico')) {
       category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Injeção > Coletores';
-      oem = 'OEM-INJ-8821';
       optimizedTitle = `${title.slice(0, 45)} Orig Perf`;
-    } else if (t.includes('radiador') || t.includes('reservatorio') || t.includes('agua') || t.includes('arrefecimento')) {
+    } else if (t.includes('radiador') || t.includes('reservatorio') || t.includes('agua') || t.includes('arrefecimento') || t.includes('valvula termostatica')) {
       category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Arrefecimento > Reservatórios e Radiadores';
-      oem = 'OEM-ARR-4410';
       optimizedTitle = `${title.slice(0, 45)} Arrefec Orig`;
-    } else if (t.includes('freio') || t.includes('pastilha') || t.includes('disco')) {
+    } else if (t.includes('freio') || t.includes('pastilha') || t.includes('disco') || t.includes('pinça') || t.includes('cilindro mestre')) {
       category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios > Pastilhas e Discos';
-      oem = 'OEM-FR-3320';
       optimizedTitle = `${title.slice(0, 45)} Freio Comp`;
-    } else if (t.includes('suspensao') || t.includes('amortecedor') || t.includes('bandeja')) {
+    } else if (t.includes('suspensao') || t.includes('amortecedor') || t.includes('bandeja') || t.includes('pivo') || t.includes('terminal')) {
       category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Suspensão e Direção';
-      oem = 'OEM-SUS-1190';
       optimizedTitle = `${title.slice(0, 45)} Suspensão`;
     } else {
       category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Peças de Motor';
-      oem = 'OEM-MOT-1002';
       optimizedTitle = `${title.slice(0, 45)} Motor Orig`;
     }
   }
@@ -87,7 +81,7 @@ function aiAnalyzeAutoPart(title = '') {
     optimizedTitle = optimizedTitle.slice(0, 60);
   }
 
-  return { section, category, oem, optimizedTitle };
+  return { section, category, optimizedTitle };
 }
 
 function parseCurrency(val) {
@@ -241,8 +235,8 @@ export default function App() {
       price: basePrice,
       wholesalePrice,
       wholesaleMinQty: Number(p.wholesaleMinQty) || 4,
-      section: p.section || aiData.section,
-      currentCat: p.currentCat || aiData.category
+      section: aiData.section,
+      currentCat: aiData.category
     };
   });
 
@@ -270,8 +264,8 @@ export default function App() {
       price: finalPrice,
       wholesalePrice: Number((finalPrice * 0.85).toFixed(2)),
       wholesaleMinQty: Number(formData.wholesaleMinQty) || 4,
-      section: formData.section || aiData.section,
-      currentCat: formData.currentCat || aiData.category
+      section: aiData.section,
+      currentCat: aiData.category
     };
 
     let updated;
@@ -597,7 +591,7 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
         <Search className="w-4 h-4 text-slate-500" />
         <input
           type="text"
-          placeholder="Pesquisar na Base de Estoque por Código ou Produto..."
+          placeholder="Pesquisar na Base de Estoque por Código ou Título..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-transparent text-sm text-white focus:outline-none"
@@ -766,7 +760,7 @@ function WholesaleCalculatorTab({ products, darkMode }) {
               className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-semibold"
             >
               {products.map(p => (
-                <option key={p.id || p.sku} value={p.sku}>Código {p.sku} - {p.name}</option>
+                <option key={p.id || p.sku} value={p.sku}>SKU: {p.sku} - {p.name}</option>
               ))}
             </select>
           </div>
@@ -863,7 +857,7 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
         <Search className="w-4 h-4 text-slate-500" />
         <input
           type="text"
-          placeholder="Pesquisar por Peça ou Código..."
+          placeholder="Pesquisar por SKU ou Título..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-transparent text-sm text-white focus:outline-none"
@@ -875,7 +869,7 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
-                <th className="p-4">Código / Peça</th>
+                <th className="p-4">SKU / Título</th>
                 <th className="p-4">Seu Preço Varejo</th>
                 <th className="p-4">Média Concorrência</th>
                 <th className="p-4">Status Buy Box</th>
@@ -888,7 +882,7 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
                 return (
                   <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                     <td className="p-4">
-                      <div className="font-bold text-amber-400 font-mono">Código: {p.sku}</div>
+                      <div className="font-bold text-amber-400 font-mono">SKU: {p.sku}</div>
                       <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
                     </td>
                     <td className="p-4 font-mono font-bold text-slate-100">
@@ -972,7 +966,7 @@ function MarginCalculatorTab({ products, darkMode }) {
               className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-semibold"
             >
               {products.map(p => (
-                <option key={p.id} value={p.sku}>Código {p.sku} - {p.name}</option>
+                <option key={p.id} value={p.sku}>SKU: {p.sku} - {p.name}</option>
               ))}
             </select>
           </div>
@@ -1028,7 +1022,7 @@ function OrganicSeoTab({ products, darkMode }) {
 
   const handleGenerateSeo = () => {
     const analysis = aiAnalyzeAutoPart(currentProd.name);
-    setAiTip(`🤖 **Análise de IA para Tráfego Orgânico:** Para a peça "${currentProd.name}" (Código ${currentProd.sku}), sugerimos aplicar o título otimizado de até 60 caracteres **"${analysis.optimizedTitle}"** (${analysis.optimizedTitle.length} caracteres). Isso garante inclusão de termos de alta busca no Mercado Livre, elevando o score de ranqueamento para 98%.`);
+    setAiTip(`🤖 **Análise de IA para Tráfego Orgânico:** Para a peça "${currentProd.name}" (SKU: ${currentProd.sku}), sugerimos aplicar o título otimizado de até 60 caracteres **"${analysis.optimizedTitle}"** (${analysis.optimizedTitle.length} caracteres). Isso garante inclusão de termos de alta busca no Mercado Livre, elevando o score de ranqueamento para 98%.`);
   };
 
   return (
@@ -1048,7 +1042,7 @@ function OrganicSeoTab({ products, darkMode }) {
               className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-semibold text-xs"
             >
               {products.map(p => (
-                <option key={p.id} value={p.sku}>Código {p.sku} - {p.name}</option>
+                <option key={p.id} value={p.sku}>SKU: {p.sku} - {p.name}</option>
               ))}
             </select>
           </div>
@@ -1074,7 +1068,7 @@ function OrganicSeoTab({ products, darkMode }) {
           return (
             <div key={idx} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3`}>
               <div>
-                <span className="text-xs font-mono text-amber-400 font-bold">Código: {p.sku}</span>
+                <span className="text-xs font-mono text-amber-400 font-bold">SKU: {p.sku}</span>
                 <div className="font-semibold text-slate-200">{p.name}</div>
                 <div className="text-[11px] font-mono text-blue-400 mt-1">Título ML Sugerido ({opt.optimizedTitle.length} chars): {opt.optimizedTitle}</div>
               </div>
@@ -1241,7 +1235,7 @@ function CurvaAbcTab({ products, setProducts, darkMode }) {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
-              <th className="p-4">Código / Peça</th>
+              <th className="p-4">SKU / Título</th>
               <th className="p-4">Estoque</th>
               <th className="p-4">Preço Varejo</th>
               <th className="p-4 text-center">Classificação ABC</th>
@@ -1257,7 +1251,10 @@ function CurvaAbcTab({ products, setProducts, darkMode }) {
                 const currentCurve = p.curveClass || 'A';
                 return (
                   <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                    <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
+                    <td className="p-4">
+                      <div className="font-mono font-bold text-amber-400">SKU: {p.sku}</div>
+                      <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
+                    </td>
                     <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
                     <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
                     <td className="p-4 text-center">
@@ -1305,13 +1302,13 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
     }, 400);
   };
 
-  const filtered = selectedSection === 'ALL' ? products : products.filter(p => (p.section || aiAnalyzeAutoPart(p.name).section) === selectedSection);
+  const filtered = selectedSection === 'ALL' ? products : products.filter(p => aiAnalyzeAutoPart(p.name).section === selectedSection);
 
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Auditoria & Categorias por Seção (Mecânica, Elétrica, Lataria, Acabamentos)</h2>
-        <p className="text-sm text-slate-400">Filtre e audite suas peças divididas exatamente nas quatro grandes seções do setor automotivo.</p>
+        <p className="text-sm text-slate-400">Filtre e audite rigorosamente suas peças divididas nas quatro grandes seções oficiais.</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -1332,8 +1329,8 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
-              <th className="p-4">Código (SKU) / Título</th>
-              <th className="p-4">Seção</th>
+              <th className="p-4">SKU / Título (Col A e Col D)</th>
+              <th className="p-4">Seção Classificada</th>
               <th className="p-4">Categoria Oficial Mercado Livre</th>
               <th className="p-4 text-center">Ação IA</th>
             </tr>
@@ -1341,7 +1338,6 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
           <tbody className="divide-y divide-slate-800/50 text-xs">
             {filtered.map(p => {
               const analysis = aiAnalyzeAutoPart(p.name);
-              const sec = p.section || analysis.section;
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                   <td className="p-4">
@@ -1350,10 +1346,10 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
                   </td>
                   <td className="p-4">
                     <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold">
-                      {sec}
+                      {analysis.section}
                     </span>
                   </td>
-                  <td className="p-4 font-mono text-slate-300">{p.currentCat || analysis.category}</td>
+                  <td className="p-4 font-mono text-slate-300">{analysis.category}</td>
                   <td className="p-4 text-center">
                     <button
                       onClick={() => handleAiAudit(p.id, p.name)}
@@ -1402,6 +1398,7 @@ function TeamGuideTab({ darkMode }) {
 }
 
 function AssistantTab({ products, setProducts, darkMode }) {
+  const [selectedSection, setSelectedSection] = useState('ALL');
   const [optimizedTitles, setOptimizedTitles] = useState({});
 
   const handleAiOptimizeTitle = (id, currentName) => {
@@ -1411,6 +1408,8 @@ function AssistantTab({ products, setProducts, darkMode }) {
     }, 400);
   };
 
+  const filtered = selectedSection === 'ALL' ? products : products.filter(p => aiAnalyzeAutoPart(p.name).section === selectedSection);
+
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
@@ -1418,23 +1417,40 @@ function AssistantTab({ products, setProducts, darkMode }) {
         <p className="text-sm text-slate-400">Utilize inteligência artificial para reescrever títulos com até 60 caracteres exigidos pelo padrão oficial do Mercado Livre.</p>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {['ALL', 'Mecânica', 'Elétrica', 'Lataria', 'Acabamentos'].map(sec => (
+          <button
+            key={sec}
+            onClick={() => setSelectedSection(sec)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              selectedSection === sec ? 'bg-amber-400 text-slate-950 shadow-md' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            {sec === 'ALL' ? 'Todas as Seções' : sec}
+          </button>
+        ))}
+      </div>
+
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
-              <th className="p-4">Código (SKU)</th>
-              <th className="p-4">Título Atual</th>
+              <th className="p-4">SKU / Seção</th>
+              <th className="p-4">Título Atual (Col D)</th>
               <th className="p-4">Título Sugerido pela IA (≤ 60 chars)</th>
               <th className="p-4 text-center">Ação IA</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50 text-xs">
-            {products.map(p => {
+            {filtered.map(p => {
               const analysis = aiAnalyzeAutoPart(p.name);
               const suggested = optimizedTitles[p.id] || analysis.optimizedTitle;
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-4 font-mono font-bold text-amber-400">{p.sku}</td>
+                  <td className="p-4">
+                    <div className="font-mono font-bold text-amber-400">SKU: {p.sku}</div>
+                    <div className="text-[10px] text-blue-400 font-bold mt-0.5">{analysis.section}</div>
+                  </td>
                   <td className="p-4 font-semibold text-slate-200">{p.name}</td>
                   <td className="p-4 font-mono text-emerald-400 font-bold">
                     {suggested} <span className="text-[10px] text-slate-400 font-normal">({suggested.length} chars)</span>
@@ -1469,7 +1485,7 @@ function CategoriesTab({ products, setProducts, darkMode }) {
     }, 400);
   };
 
-  const filtered = selectedSection === 'ALL' ? products : products.filter(p => (p.section || aiAnalyzeAutoPart(p.name).section) === selectedSection);
+  const filtered = selectedSection === 'ALL' ? products : products.filter(p => aiAnalyzeAutoPart(p.name).section === selectedSection);
 
   return (
     <div className="space-y-6">
@@ -1496,7 +1512,7 @@ function CategoriesTab({ products, setProducts, darkMode }) {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
-              <th className="p-4">Código (SKU) / Título</th>
+              <th className="p-4">SKU / Título (Col A e Col D)</th>
               <th className="p-4">Seção</th>
               <th className="p-4">Categoria Oficial Mercado Livre</th>
               <th className="p-4 text-center">Ação IA</th>
@@ -1505,15 +1521,14 @@ function CategoriesTab({ products, setProducts, darkMode }) {
           <tbody className="divide-y divide-slate-800/50 text-xs">
             {filtered.map(p => {
               const analysis = aiAnalyzeAutoPart(p.name);
-              const activeCat = mappedCategories[p.id] || p.currentCat || analysis.category;
-              const sec = p.section || analysis.section;
+              const activeCat = mappedCategories[p.id] || analysis.category;
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                   <td className="p-4">
                     <div className="font-mono font-bold text-amber-400">SKU: {p.sku}</div>
                     <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
                   </td>
-                  <td className="p-4 font-bold text-blue-400">{sec}</td>
+                  <td className="p-4 font-bold text-blue-400">{analysis.section}</td>
                   <td className="p-4 text-emerald-400 font-mono font-semibold">{activeCat}</td>
                   <td className="p-4 text-center">
                     <button
@@ -1850,7 +1865,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
               {filteredProducts.map((p) => {
                 const pVarejo = Number(p.price || 150);
                 const pAtacado = Number(p.wholesalePrice || (pVarejo * 0.85));
-                const sec = p.section || aiAnalyzeAutoPart(p.name).section;
+                const analysis = aiAnalyzeAutoPart(p.name);
                 return (
                   <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                     <td className="p-4">
@@ -1858,7 +1873,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
                       <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
                     </td>
                     <td className="p-4">
-                      <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold">{sec}</span>
+                      <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold">{analysis.section}</span>
                     </td>
                     <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
                     <td className="p-4 font-mono">
@@ -2051,7 +2066,7 @@ function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMo
         <Search className="w-4 h-4 text-slate-500" />
         <input
           type="text"
-          placeholder="Pesquisar por Peça ou SKU..."
+          placeholder="Pesquisar por SKU ou Título..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-transparent text-sm text-white focus:outline-none"
@@ -2064,7 +2079,7 @@ function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMo
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
                 <th className="p-4">Data</th>
-                <th className="p-4">Peça / SKU</th>
+                <th className="p-4">SKU / Título</th>
                 <th className="p-4">Motivo</th>
                 <th className="p-4 text-right">Valor</th>
                 <th className="p-4">Status</th>
@@ -2108,7 +2123,7 @@ function ReturnsTab({ returnsList, setReturnsList, products, currentUser, darkMo
             
             <form onSubmit={handleAddReturn} className="space-y-3 text-xs">
               <div>
-                <label className="text-slate-400 font-medium">Nome da Peça</label>
+                <label className="text-slate-400 font-medium">Título da Peça</label>
                 <input type="text" placeholder="Ex: Coletor Admissão..." value={newReturn.name} onChange={(e) => setNewReturn({ ...newReturn, name: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -2236,12 +2251,12 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
         </div>
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
           <div>
-            <label className="text-slate-400 font-medium">Título (Otimizado automático ≤ 60 chars)</label>
+            <label className="text-slate-400 font-medium">Título (Col D - Otimizado automático ≤ 60 chars)</label>
             <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-slate-400 font-medium">SKU</label>
+              <label className="text-slate-400 font-medium">SKU (Col A)</label>
               <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
             </div>
             <div>
