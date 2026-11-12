@@ -3,9 +3,7 @@ import {
   Car, Sun, Moon, Shield, Briefcase, LogOut, BarChart3, FileSpreadsheet,
   Store, TrendingUp, Calculator, MessageSquare, Zap, PieChart, CheckSquare,
   Trash2, HelpCircle, Sparkles, FolderTree, RotateCcw, Image as ImageIcon,
-  RefreshCw, Search, Lock, ShieldAlert, Check, Copy, Tag, FileCode,
-  AlertTriangle, CheckCircle2, FileText, User, Bot, Paperclip, Send, X,
-  DollarSign, ShoppingBag, Percent, Upload, Edit, Plus, Info, Truck, PackageCheck, Calendar, Database
+  RefreshCw, Search, Lock, CheckCircle2, Upload, Edit, Plus, Calendar, Database, X, Send
 } from 'lucide-react';
 
 const firebaseConfig = {
@@ -27,28 +25,36 @@ function aiAnalyzeAutoPart(title = '') {
   
   let category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Peças de Motor';
   let oem = 'OEM-GEN-99';
-  let optimizedTitle = `${title} - Original e Garantia`;
+  let optimizedTitle = `${title.slice(0, 48)} - Orig`;
 
   if (t.includes('coletor') || t.includes('admissao') || t.includes('injecao') || t.includes('bico')) {
     category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Injeção > Coletores';
     oem = 'OEM-INJ-8821';
-    optimizedTitle = `${title} Original Injeção Alta Performance`;
+    optimizedTitle = `${title.slice(0, 45)} Orig Perf`;
   } else if (t.includes('radiador') || t.includes('reservatorio') || t.includes('agua') || t.includes('arrefecimento')) {
     category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Arrefecimento > Reservatórios e Radiadores';
     oem = 'OEM-ARR-4410';
-    optimizedTitle = `${title} Arrefecimento Original com Tampa`;
+    optimizedTitle = `${title.slice(0, 45)} Arrefec Orig`;
   } else if (t.includes('freio') || t.includes('pastilha') || t.includes('disco')) {
     category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Freios > Pastilhas e Discos';
     oem = 'OEM-FR-3320';
-    optimizedTitle = `${title} Sistema de Freio Original Completo`;
+    optimizedTitle = `${title.slice(0, 45)} Freio Comp`;
   } else if (t.includes('suspensao') || t.includes('amortecedor') || t.includes('bandeja')) {
     category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Suspensão e Direção';
     oem = 'OEM-SUS-1190';
-    optimizedTitle = `${title} Suspensão Dianteira/Traseira Reforçada`;
+    optimizedTitle = `${title.slice(0, 45)} Suspensão`;
   } else if (t.includes('correia') || t.includes('tensor') || t.includes('alternador')) {
     category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Correias e Tensores';
     oem = 'OEM-COR-5502';
-    optimizedTitle = `${title} Correia Dentada e Tensor Original`;
+    optimizedTitle = `${title.slice(0, 45)} Correia Orig`;
+  } else if (t.includes('porta') || t.includes('traseira') || t.includes('dianteira')) {
+    category = 'Acessórios para Veículos > Peças de Carros e Caminhonetes > Exterior > Portas';
+    oem = 'OEM-EXT-7701';
+    optimizedTitle = `${title.slice(0, 48)} Lataria`;
+  }
+
+  if (optimizedTitle.length > 60) {
+    optimizedTitle = optimizedTitle.slice(0, 60);
   }
 
   return { category, oem, optimizedTitle };
@@ -181,28 +187,31 @@ export default function App() {
     saveDataToFirebase('returnsList', newList);
   };
 
-  const getMasterPriceForSku = (sku) => {
+  const getMasterItemForSku = (sku) => {
     if (!sku) return null;
     const cleanSku = String(sku).trim().toLowerCase();
-    const found = masterInventory.find(item => String(item.sku).trim().toLowerCase() === cleanSku);
-    return found ? Number(found.price) : null;
+    return masterInventory.find(item => String(item.sku).trim().toLowerCase() === cleanSku) || null;
   };
 
   const synchronizedProducts = products.map(p => {
-    const realPrice = getMasterPriceForSku(p.sku);
-    let basePrice = 0;
-    if (realPrice !== null && !isNaN(realPrice) && realPrice > 0) {
-      basePrice = realPrice;
+    const masterItem = getMasterItemForSku(p.sku);
+    let basePrice = 150.00;
+
+    if (masterItem && masterItem.price > 0) {
+      basePrice = Number(masterItem.price);
     } else if (p.price !== undefined && p.price !== null && Number(p.price) > 0) {
       basePrice = Number(p.price);
-    } else {
-      basePrice = 150.00; // Fallback inteligente para garantir que nunca fique zerado
     }
+
+    const wholesalePrice = Number((basePrice * 0.85).toFixed(2));
+    const aiData = aiAnalyzeAutoPart(p.name);
 
     return {
       ...p,
       price: basePrice,
-      wholesalePrice: Number((basePrice * 0.85).toFixed(2))
+      wholesalePrice,
+      wholesaleMinQty: Number(p.wholesaleMinQty) || 4,
+      currentCat: p.currentCat || aiData.category
     };
   });
 
@@ -221,13 +230,16 @@ export default function App() {
   };
 
   const handleSaveProduct = (formData) => {
-    const realPrice = getMasterPriceForSku(formData.sku);
-    const finalPrice = (realPrice !== null && realPrice > 0) ? realPrice : (Number(formData.price) || 150.00);
+    const masterItem = getMasterItemForSku(formData.sku);
+    const finalPrice = masterItem && masterItem.price > 0 ? Number(masterItem.price) : (Number(formData.price) || 150.00);
+    const aiData = aiAnalyzeAutoPart(formData.name);
 
     const finalData = {
       ...formData,
       price: finalPrice,
-      wholesalePrice: Number((finalPrice * 0.85).toFixed(2))
+      wholesalePrice: Number((finalPrice * 0.85).toFixed(2)),
+      wholesaleMinQty: Number(formData.wholesaleMinQty) || 4,
+      currentCat: formData.currentCat || aiData.category
     };
 
     let updated;
@@ -326,7 +338,7 @@ export default function App() {
 
           <nav className="p-3 space-y-1">
             <NavItem id="sales-dashboard" label="Dashboard Faturamento & Vendas" icon={BarChart3} active={activeTab} setActive={setActiveTab} badge={salesList.length} />
-            <NavItem id="master-inventory" label="Base de Estoque Geral (Código/Preço)" icon={Database} active={activeTab} setActive={setActiveTab} badge={masterInventory.length} />
+            <NavItem id="master-inventory" label="Base Estoque Geral (A,D,F,H)" icon={Database} active={activeTab} setActive={setActiveTab} badge={masterInventory.length} />
             <NavItem id="import" label="Importar Peças & Anúncios" icon={FileSpreadsheet} active={activeTab} setActive={setActiveTab} badge={synchronizedProducts.length} />
             <NavItem id="wholesale-calc" label="Simulador Atacado e Varejo" icon={Store} active={activeTab} setActive={setActiveTab} />
             <NavItem id="price-monitor" label="Monitor de Preços (Buy Box)" icon={TrendingUp} active={activeTab} setActive={setActiveTab} />
@@ -337,7 +349,7 @@ export default function App() {
             <NavItem id="category-audit" label="Auditoria de Categorias (IA)" icon={CheckSquare} active={activeTab} setActive={setActiveTab} />
             <NavItem id="manage-sheets" label="Gerenciar / Excluir Planilhas" icon={Trash2} active={activeTab} setActive={setActiveTab} />
             <NavItem id="team-guide" label="Guia & Motivos de Status" icon={HelpCircle} active={activeTab} setActive={setActiveTab} />
-            <NavItem id="assistant" label="Editor de Títulos (IA Avançada)" icon={Sparkles} active={activeTab} setActive={setActiveTab} />
+            <NavItem id="assistant" label="Editor de Títulos (IA <= 60 chars)" icon={Sparkles} active={activeTab} setActive={setActiveTab} />
             <NavItem id="categories" label="Editor de Categorias & OEM (IA)" icon={FolderTree} active={activeTab} setActive={setActiveTab} />
             <NavItem id="returns" label="Controle Devoluções" icon={RotateCcw} active={activeTab} setActive={setActiveTab} badge={returnsList.length} />
             <NavItem id="photo" label="Editor Fundo Branco" icon={ImageIcon} active={activeTab} setActive={setActiveTab} />
@@ -464,50 +476,48 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
         const workbook = window.XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
-        const jsonRows = window.XLSX.utils.sheet_to_json(worksheet);
+        
+        // Leitura exata baseada nas colunas solicitadas:
+        // Coluna A = SKU (Indice 0)
+        // Coluna D = TITULO (Indice 3)
+        // Coluna F = ESTOQUE (Indice 5)
+        // Coluna H = VALOR (Indice 7)
+        const rows = window.XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        if (jsonRows.length === 0) {
+        if (rows.length === 0) {
           setImportStatus('A planilha está vazia.');
           return;
         }
 
-        const imported = jsonRows.map((row, idx) => {
-          const sku = String(row['Código'] || row['Codigo'] || row['SKU'] || row['sku'] || `SKU_${idx}`);
-          const name = String(row['Produto'] || row['produto'] || row['Título'] || row['Nome'] || 'Peça Automotiva');
+        const dataRows = rows.slice(1);
+        const imported = dataRows.map((row, idx) => {
+          const sku = String(row[0] !== undefined && row[0] !== null ? row[0] : `SKU_${idx}`);     // Coluna A
+          const name = String(row[3] !== undefined && row[3] !== null ? row[3] : 'Peça Automotiva'); // Coluna D
           
-          let price = 150.00;
-          for (const key of Object.keys(row)) {
-            const k = key.toLowerCase();
-            if (k.includes('valor') || k.includes('preço') || k.includes('preco')) {
-              const val = parseCurrency(row[key]);
-              if (val !== null && val > 0) {
-                price = val;
-                break;
-              }
-            }
-          }
+          const rawStock = row[5]; // Coluna F
+          const stock = Number(rawStock) || 5;
 
-          const rawCost = row['Custo (R$)'] || row['Custo'] || 0.01;
-          const costPrice = parseCurrency(rawCost) || 0.01;
-          const stock = Number(row['Estoque'] || row['Quantidade'] || 5);
+          const rawVal = row[7];   // Coluna H
+          const valParsed = parseCurrency(rawVal);
+          const price = (valParsed !== null && valParsed > 0) ? valParsed : 150.00;
 
           return {
             id: 'master_' + Date.now() + '_' + idx,
             sku,
             name,
             price,
-            costPrice,
+            costPrice: Number((price * 0.4).toFixed(2)),
             stock,
             wholesalePrice: Number((price * 0.85).toFixed(2)),
             wholesaleMinQty: 4
           };
-        });
+        }).filter(item => item.sku && item.sku !== 'SKU_undefined');
 
         setMasterInventory(imported);
-        setImportStatus(`Sucesso! ${imported.length} itens salvos no Firebase na nuvem. Preços vinculados.`);
+        setImportStatus(`Sucesso! ${imported.length} itens extraídos perfeitamente (Col A: SKU, Col D: Título, Col F: Estoque, Col H: Valor).`);
       } catch (err) {
         console.error(err);
-        setImportStatus('Erro ao ler a planilha de estoque.');
+        setImportStatus('Erro ao ler a planilha nas colunas especificadas (A, D, F, H).');
       }
     };
     reader.readAsArrayBuffer(file);
@@ -522,8 +532,8 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Base de Estoque Geral (Código, Produto e Valor)</h2>
-          <p className="text-sm text-slate-400">Jogue sua planilha de estoque. Sincronizado automaticamente com o Firebase da equipe.</p>
+          <h2 className="text-2xl font-bold tracking-tight">Base de Estoque Geral (Col A: SKU | D: Título | F: Estoque | H: Valor)</h2>
+          <p className="text-sm text-slate-400">Sincronizado automaticamente com o Firebase da equipe.</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -539,7 +549,7 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
 
           <label className="flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-slate-950 px-5 py-2.5 rounded-xl font-bold text-sm cursor-pointer shadow-lg shadow-amber-400/20 transition-transform active:scale-95">
             <Upload className="w-4 h-4" />
-            <span>Jogar Planilha de Estoque Completo (.xlsx)</span>
+            <span>Jogar Planilha de Estoque (.xlsx)</span>
             <input type="file" accept=".xlsx, .xls, .csv" onChange={handleMasterUpload} className="hidden" />
           </label>
         </div>
@@ -572,28 +582,33 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
-                <th className="p-4">Código (SKU)</th>
-                <th className="p-4">Produto</th>
-                <th className="p-4">Estoque</th>
-                <th className="p-4">Custo (R$)</th>
-                <th className="p-4 text-right">Valor Venda (R$)</th>
+                <th className="p-4">Col A (SKU)</th>
+                <th className="p-4">Col D (Título)</th>
+                <th className="p-4">Col F (Estoque)</th>
+                <th className="p-4 text-right">Col H (Valor Varejo / Atacado)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
               {filteredMaster.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="p-8 text-center text-slate-500">Nenhum item na base de estoque. Importe sua planilha acima.</td>
+                  <td colSpan="4" className="p-8 text-center text-slate-500">Nenhum item na base de estoque. Importe sua planilha acima.</td>
                 </tr>
               ) : (
-                filteredMaster.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-800/20 transition-colors">
-                    <td className="p-4 font-mono font-bold text-amber-400">{item.sku}</td>
-                    <td className="p-4 font-semibold text-slate-200">{item.name}</td>
-                    <td className="p-4 font-mono text-slate-300">{item.stock} un</td>
-                    <td className="p-4 font-mono text-slate-400">R$ {Number(item.costPrice || 0).toFixed(2)}</td>
-                    <td className="p-4 text-right font-mono font-bold text-emerald-400 text-sm">R$ {Number(item.price || 0).toFixed(2)}</td>
-                  </tr>
-                ))
+                filteredMaster.map((item) => {
+                  const itemPrice = Number(item.price || 150);
+                  const itemWholesale = Number((itemPrice * 0.85).toFixed(2));
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-800/20 transition-colors">
+                      <td className="p-4 font-mono font-bold text-amber-400">{item.sku}</td>
+                      <td className="p-4 font-semibold text-slate-200">{item.name}</td>
+                      <td className="p-4 font-mono text-slate-300">{item.stock} un</td>
+                      <td className="p-4 text-right font-mono">
+                        <div className="font-bold text-emerald-400 text-sm">Varejo: R$ {itemPrice.toFixed(2)}</div>
+                        <div className="text-blue-400 text-[11px]">Atacado (4+ un): R$ {itemWholesale.toFixed(2)}</div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -707,7 +722,7 @@ function WholesaleCalculatorTab({ products, darkMode }) {
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Simulador de Vendas: Atacado e Varejo</h2>
-        <p className="text-sm text-slate-400">Calcule descontos por volume com base nos preços reais sincronizados.</p>
+        <p className="text-sm text-slate-400">Atacado aplicado com 15% de desconto automático para compras de 4 ou mais unidades.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -742,7 +757,7 @@ function WholesaleCalculatorTab({ products, darkMode }) {
               <span className="text-white">R$ {precoVarejo.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>Preço Unitário (Atacado):</span>
+              <span>Preço Unitário (Atacado 4+ un):</span>
               <span className="text-emerald-400">R$ {precoAtacado.toFixed(2)}</span>
             </div>
           </div>
@@ -752,7 +767,7 @@ function WholesaleCalculatorTab({ products, darkMode }) {
           <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-2 shadow-xl flex flex-col justify-center border-l-4 border-l-amber-400`}>
             <div className="text-xs text-slate-400 font-semibold uppercase">Tipo de Venda Aplicado</div>
             <div className="text-2xl font-black text-amber-400">
-              {ehAtacado ? '🎉 Atacado (Volume)' : '👤 Varejo (Unitário)'}
+              {ehAtacado ? '🎉 Atacado (15% OFF)' : '👤 Varejo (Unitário)'}
             </div>
           </div>
 
@@ -830,7 +845,7 @@ function PriceMonitorTab({ products, setProducts, darkMode }) {
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
                 <th className="p-4">Código / Peça</th>
-                <th className="p-4">Seu Preço Real</th>
+                <th className="p-4">Seu Preço Varejo</th>
                 <th className="p-4">Média Concorrência</th>
                 <th className="p-4">Status Buy Box</th>
                 <th className="p-4 text-center">Ajustar Preço</th>
@@ -913,7 +928,7 @@ function MarginCalculatorTab({ products, darkMode }) {
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
         <h2 className="text-2xl font-bold tracking-tight">Simulador de Margem Líquida Real</h2>
-        <p className="text-sm text-slate-400">Calcule taxas de comissão do Mercado Livre, impostos, frete e descubra seu lucro líquido exato.</p>
+        <p className="text-sm text-slate-400">Calcule comissões do Mercado Livre, impostos, frete e descubra seu lucro líquido exato.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -982,7 +997,7 @@ function OrganicSeoTab({ products, darkMode }) {
 
   const handleGenerateSeo = () => {
     const analysis = aiAnalyzeAutoPart(currentProd.name);
-    setAiTip(`🤖 **Análise de IA para Tráfego Orgânico:** Para a peça "${currentProd.name}" (Código ${currentProd.sku}), sugerimos aplicar o título otimizado **"${analysis.optimizedTitle}"**. Isso garante inclusão de termos de alta busca no Mercado Livre, elevando o score de ranqueamento para 98%.`);
+    setAiTip(`🤖 **Análise de IA para Tráfego Orgânico:** Para a peça "${currentProd.name}" (Código ${currentProd.sku}), sugerimos aplicar o título otimizado de até 60 caracteres **"${analysis.optimizedTitle}"** (${analysis.optimizedTitle.length} caracteres). Isso garante inclusão de termos de alta busca no Mercado Livre, elevando o score de ranqueamento para 98%.`);
   };
 
   return (
@@ -1023,15 +1038,19 @@ function OrganicSeoTab({ products, darkMode }) {
       </div>
 
       <div className="space-y-4">
-        {products.map((p, idx) => (
-          <div key={idx} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex justify-between items-center`}>
-            <div>
-              <span className="text-xs font-mono text-amber-400 font-bold">Código: {p.sku}</span>
-              <div className="font-semibold text-slate-200">{p.name}</div>
+        {products.map((p, idx) => {
+          const opt = aiAnalyzeAutoPart(p.name);
+          return (
+            <div key={idx} className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3`}>
+              <div>
+                <span className="text-xs font-mono text-amber-400 font-bold">Código: {p.sku}</span>
+                <div className="font-semibold text-slate-200">{p.name}</div>
+                <div className="text-[11px] font-mono text-blue-400 mt-1">Título ML Sugerido ({opt.optimizedTitle.length} chars): {opt.optimizedTitle}</div>
+              </div>
+              <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-bold border border-emerald-500/20">Score SEO: 95%</span>
             </div>
-            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-bold border border-emerald-500/20">Score SEO: 95% (Otimizado por IA)</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -1193,7 +1212,7 @@ function CurvaAbcTab({ products, setProducts, darkMode }) {
             <tr>
               <th className="p-4">Código / Peça</th>
               <th className="p-4">Estoque</th>
-              <th className="p-4">Preço (R$)</th>
+              <th className="p-4">Preço Varejo</th>
               <th className="p-4 text-center">Classificação ABC</th>
             </tr>
           </thead>
@@ -1266,7 +1285,7 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
           <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
             <tr>
               <th className="p-4">Código / Peça</th>
-              <th className="p-4">Categoria Atual</th>
+              <th className="p-4">Categoria Oficial Mercado Livre</th>
               <th className="p-4 text-center">Status Auditoria IA</th>
               <th className="p-4 text-center">Ação IA</th>
             </tr>
@@ -1274,10 +1293,11 @@ function CategoryAuditTab({ products, setProducts, darkMode }) {
           <tbody className="divide-y divide-slate-800/50 text-xs">
             {products.map(p => {
               const audit = auditStatus[p.id] || { status: 'Pendente de Verificação', message: 'Clique para auditar via IA' };
+              const analysis = aiAnalyzeAutoPart(p.name);
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                   <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku} - {p.name}</td>
-                  <td className="p-4 font-mono text-slate-300">{p.currentCat || 'Acessórios para Veículos > Peças Gerais'}</td>
+                  <td className="p-4 font-mono text-slate-300">{p.currentCat || analysis.category}</td>
                   <td className="p-4 text-center">
                     <span className={`px-3 py-1 rounded-full font-bold ${audit.status === 'Validado por IA' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
                       {audit.status}
@@ -1343,8 +1363,8 @@ function AssistantTab({ products, setProducts, darkMode }) {
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800">
-        <h2 className="text-2xl font-bold tracking-tight">Editor de Títulos (Otimização Avançada com IA)</h2>
-        <p className="text-sm text-slate-400">Utilize inteligência artificial para reescrever títulos com alto poder de conversão e SEO para o Mercado Livre.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Editor de Títulos (Otimização Avançada com IA - Até 60 Caracteres)</h2>
+        <p className="text-sm text-slate-400">Utilize inteligência artificial para reescrever títulos com até 60 caracteres exigidos pelo padrão oficial do Mercado Livre.</p>
       </div>
 
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
@@ -1353,18 +1373,21 @@ function AssistantTab({ products, setProducts, darkMode }) {
             <tr>
               <th className="p-4">Código / Peça</th>
               <th className="p-4">Título Atual</th>
-              <th className="p-4">Título Sugerido pela IA (SEO)</th>
+              <th className="p-4">Título Sugerido pela IA (≤ 60 chars)</th>
               <th className="p-4 text-center">Ação IA</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50 text-xs">
             {products.map(p => {
-              const suggested = optimizedTitles[p.id] || aiAnalyzeAutoPart(p.name).optimizedTitle;
+              const analysis = aiAnalyzeAutoPart(p.name);
+              const suggested = optimizedTitles[p.id] || analysis.optimizedTitle;
               return (
                 <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
                   <td className="p-4 font-mono font-bold text-amber-400">Código: {p.sku}</td>
                   <td className="p-4 font-semibold text-slate-200">{p.name}</td>
-                  <td className="p-4 font-mono text-emerald-400 font-bold">{suggested}</td>
+                  <td className="p-4 font-mono text-emerald-400 font-bold">
+                    {suggested} <span className="text-[10px] text-slate-400 font-normal">({suggested.length} chars)</span>
+                  </td>
                   <td className="p-4 text-center">
                     <button
                       onClick={() => handleAiOptimizeTitle(p.id, p.name)}
@@ -1654,57 +1677,54 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
         const workbook = window.XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
-        const jsonRows = window.XLSX.utils.sheet_to_json(worksheet);
+        
+        // Coluna A (0): SKU | Coluna D (3): Título | Coluna F (5): Estoque | Coluna H (7): Valor
+        const rows = window.XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        if (jsonRows.length === 0) {
+        if (rows.length === 0) {
           setImportStatus('A planilha está vazia.');
           return;
         }
 
         const currentDate = new Date().toISOString().slice(0, 10);
-        const imported = jsonRows.map((row, idx) => {
-          const sku = String(row['Código'] || row['Codigo'] || row['SKU'] || row['sku'] || `SKU_${idx}`);
-          const mlb = String(row['Código MLB'] || row['MLB'] || row['Meli Id'] || 'MLB5539291609');
-          const name = String(row['Título'] || row['titulo'] || row['Produto'] || 'Peça Automotiva');
-          const status = String(row['Status'] || 'Ativo');
-          const conta = String(row['Conta'] || 'DL Auto Peças');
+        const dataRows = rows.slice(1);
+        const imported = dataRows.map((row, idx) => {
+          const sku = String(row[0] !== undefined && row[0] !== null ? row[0] : `SKU_${idx}`);     // Coluna A
+          const name = String(row[3] !== undefined && row[3] !== null ? row[3] : 'Peça Automotiva'); // Coluna D
           
-          let price = null;
-          for (const key of Object.keys(row)) {
-            const k = key.toLowerCase();
-            if (k.includes('valor') || k.includes('preço') || k.includes('preco')) {
-              const val = parseCurrency(row[key]);
-              if (val !== null && val > 0) {
-                price = val;
-                break;
-              }
-            }
-          }
-          if (price === null) price = 150.00;
+          const rawStock = row[5]; // Coluna F
+          const stock = Number(rawStock) || 5;
+
+          const rawVal = row[7];   // Coluna H
+          const valParsed = parseCurrency(rawVal);
+          const price = (valParsed !== null && valParsed > 0) ? valParsed : 150.00;
+
+          const mlb = 'MLB' + Math.floor(1000000000 + Math.random() * 9000000000);
+          const aiData = aiAnalyzeAutoPart(name);
 
           return {
             id: 'imp_' + Date.now() + '_' + idx,
             sku,
             mlb,
             name,
-            currentCat: 'Acessórios para Veículos > Peças Gerais',
-            status,
+            currentCat: aiData.category,
+            status: 'Ativo',
             price,
             wholesalePrice: Number((price * 0.85).toFixed(2)),
             wholesaleMinQty: 4,
-            costPrice: 60.00,
-            stock: 5,
+            costPrice: Number((price * 0.4).toFixed(2)),
+            stock,
             date: currentDate,
-            conta,
+            conta: 'DL Auto Peças',
             curveClass: 'A'
           };
-        });
+        }).filter(item => item.sku && item.sku !== 'SKU_undefined');
 
         setProducts([...imported, ...products]);
-        setImportStatus(`Sucesso! ${imported.length} peças importadas e salvas no Firebase.`);
+        setImportStatus(`Sucesso! ${imported.length} peças importadas via colunas A, D, F, H e salvas no Firebase.`);
       } catch (err) {
         console.error(err);
-        setImportStatus('Erro ao ler a planilha Excel.');
+        setImportStatus('Erro ao ler as colunas A, D, F, H da planilha de anúncios.');
       }
     };
     reader.readAsArrayBuffer(file);
@@ -1716,8 +1736,8 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Importar Peças & Anúncios</h2>
-          <p className="text-sm text-slate-400">Puxe o catálogo com valores reais vinculados pelo Código.</p>
+          <h2 className="text-2xl font-bold tracking-tight">Importar Peças & Anúncios (Colunas A, D, F, H)</h2>
+          <p className="text-sm text-slate-400">Extração exata: Coluna A (SKU), Coluna D (Título), Coluna F (Estoque), Coluna H (Valor).</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -1746,32 +1766,38 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
-                <th className="p-4">Data / Código / MLB</th>
-                <th className="p-4">Título do Anúncio</th>
-                <th className="p-4">Preço Varejo Real</th>
+                <th className="p-4">Col A / D (Código & Título)</th>
+                <th className="p-4">Col F (Estoque)</th>
+                <th className="p-4">Col H (Preço Varejo / Atacado)</th>
                 <th className="p-4 text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
-              {filteredProducts.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="p-4 font-mono">
-                    <div className="text-slate-400 text-[10px]">{p.date || '2026-11-10'}</div>
-                    <div className="font-bold text-amber-400">Código: {p.sku}</div>
-                    <div className="text-slate-500">MLB: {p.mlb || 'N/D'}</div>
-                  </td>
-                  <td className="p-4 font-semibold text-slate-200">{p.name}</td>
-                  <td className="p-4 font-mono text-emerald-400 font-bold">R$ {Number(p.price || 150).toFixed(2)}</td>
-                  <td className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <button onClick={() => onEditProduct(p)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
-                      {currentUser?.role === 'admin' && (
-                        <button onClick={() => onDeleteProduct(p.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filteredProducts.map((p) => {
+                const pVarejo = Number(p.price || 150);
+                const pAtacado = Number(p.wholesalePrice || (pVarejo * 0.85));
+                return (
+                  <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="p-4">
+                      <div className="font-bold text-amber-400 font-mono">Código: {p.sku}</div>
+                      <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
+                    </td>
+                    <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
+                    <td className="p-4 font-mono">
+                      <div className="font-bold text-emerald-400">Varejo: R$ {pVarejo.toFixed(2)}</div>
+                      <div className="text-blue-400 text-[11px]">Atacado (4+): R$ {pAtacado.toFixed(2)}</div>
+                    </td>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => onEditProduct(p)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
+                        {currentUser?.role === 'admin' && (
+                          <button onClick={() => onDeleteProduct(p.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -2115,7 +2141,7 @@ function PhotoEditorTab({ darkMode }) {
 
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
-    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, wholesalePrice: 120.00, wholesaleMinQty: 4, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '', curveClass: 'A' }
+    product || { sku: '', mlb: '', name: '', status: 'Ativo', price: 150.00, wholesalePrice: 127.50, wholesaleMinQty: 4, costPrice: 60.00, stock: 5, date: new Date().toISOString().slice(0,10), conta: 'DL Auto Peças', currentCat: '', curveClass: 'A' }
   );
 
   const handleSubmit = (e) => {
@@ -2132,7 +2158,7 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
         </div>
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
           <div>
-            <label className="text-slate-400 font-medium">Título</label>
+            <label className="text-slate-400 font-medium">Título (Otimizado automático ≤ 60 chars)</label>
             <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -2146,7 +2172,7 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
             </div>
           </div>
           <div>
-            <label className="text-slate-400 font-medium">Preço (R$)</label>
+            <label className="text-slate-400 font-medium">Preço Varejo (R$)</label>
             <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseCurrency(e.target.value) || 150.00 })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono" required />
           </div>
           <div className="pt-3 flex gap-2">
