@@ -392,7 +392,7 @@ export default function App() {
 
         {activeTab === 'margin-calculator' && <MarginCalculatorTab products={synchronizedProducts} darkMode={darkMode} />}
 
-        {activeTab === 'faq-helper' && <FaqHelperTab products={synchronizedProducts} darkMode={darkMode} />}
+        {activeTab === 'faq-helper' && <FaqHelperTab darkMode={darkMode} />}
 
         {activeTab === 'curva-abc' && <CurvaAbcTab products={synchronizedProducts} setProducts={updateProducts} darkMode={darkMode} />}
 
@@ -1452,46 +1452,68 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           return;
         }
 
-        const currentDate = new Date().toISOString().slice(0, 10);
         const dataRows = rows.slice(1);
 
         const imported = dataRows.map((row, idx) => {
-          // Mapeamento exato das colunas solicitadas: A, D, E, F, G, L
-          const sku = String(row[0] !== undefined && row[0] !== null ? row[0] : `SKU_${idx}`);         // Coluna A
-          const name = String(row[3] !== undefined && row[3] !== null ? row[3] : 'Peça Automotiva');     // Coluna D
-          const colE = String(row[4] !== undefined && row[4] !== null ? row[4] : 'Aplicação Padrão');    // Coluna E
-          const stock = Number(row[5]) || 5;                                                         // Coluna F
-          const price = parseCurrency(row[6]) !== null ? parseCurrency(row[6]) : 150.00;             // Coluna G
-          const colL = String(row[11] !== undefined && row[11] !== null ? row[11] : 'Ativo');          // Coluna L
+          // Mapeamento correto com base na estrutura real da planilha fornecida:
+          // Coluna A (row[0]) = Código do Produto / SKU
+          // Coluna D (row[3]) = SKU
+          // Coluna E (row[4]) = Código MLB (Informação/Aplicação)
+          // Coluna F (row[5]) = Título
+          // Coluna G (row[6]) = Status
+          // Coluna L (row[11]) = Data da Publicação
+          const colA = String(row[0] !== undefined && row[0] !== null ? row[0] : `ID_${idx}`);
+          const sku = String(row[3] !== undefined && row[3] !== null ? row[3] : colA);
+          const colE = String(row[4] !== undefined && row[4] !== null ? row[4] : 'MLB');
+          const name = String(row[5] !== undefined && row[5] !== null ? row[5] : 'Peça Automotiva');
+          const colG = String(row[6] !== undefined && row[6] !== null ? row[6] : 'Ativo');
+          
+          let rawDate = row[11];
+          let formattedDate = new Date().toISOString().slice(0, 10);
+          if (rawDate) {
+            if (typeof rawDate === 'number') {
+              // Excel serial date format conversion approximation if needed
+              const excelEpoch = new Date(1899, 11, 30);
+              const d = new Date(excelEpoch.getTime() + rawDate * 86400000);
+              formattedDate = d.toISOString().slice(0, 10);
+            } else {
+              const parsedStr = String(rawDate).trim();
+              if (parsedStr.length >= 10) {
+                formattedDate = parsedStr.slice(0, 10);
+              }
+            }
+          }
 
-          const mlb = 'MLB' + Math.floor(1000000000 + Math.random() * 9000000000);
+          const price = 150.00; // Preço padrão simulado se não houver coluna monetária explícita
+          const stock = 5;      // Estoque padrão simulado
+
           const aiData = aiAnalyzeAutoPart(name);
 
           return {
             id: 'imp_' + Date.now() + '_' + idx,
             sku,
-            mlb,
-            name,
-            colE,
+            colA,
+            colE, // Código MLB / Informação
+            name, // Título (Col F)
+            colG, // Status (Col G)
             stock,
             price,
-            colL,
             section: aiData.section,
             currentCat: aiData.category,
-            status: colL || 'Ativo',
+            status: colG || 'Ativo',
             wholesalePrice: Number((price * 0.85).toFixed(2)),
             wholesaleMinQty: 4,
             costPrice: Number((price * 0.4).toFixed(2)),
-            date: currentDate,
+            date: formattedDate, // Extraído da Coluna L
             curveClass: 'A'
           };
         }).filter(item => item.sku && item.sku !== 'SKU_undefined');
 
         setProducts([...imported, ...products]);
-        setImportStatus(`Sucesso! ${imported.length} anúncios importados com extração das colunas A, D, E, F, G e L.`);
+        setImportStatus(`Sucesso! ${imported.length} anúncios importados com leitura rigorosa das colunas A, D, E, F, G e L da planilha real.`);
       } catch (err) {
         console.error(err);
-        setImportStatus('Erro ao ler a planilha nas colunas especificadas (A, D, E, F, G, L).');
+        setImportStatus('Erro ao ler a planilha nas colunas especificadas.');
       }
     };
     reader.readAsArrayBuffer(file);
@@ -1512,7 +1534,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
       <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Calendário & Importação de Anúncios (Col A, D, E, F, G, L)</h2>
-          <p className="text-sm text-slate-400">Selecione qualquer dia no calendário para auditar quantos anúncios foram feitos.</p>
+          <p className="text-sm text-slate-400">Selecione qualquer dia no calendário para auditar quantos anúncios foram feitos com base na data real da planilha.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -1563,7 +1585,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           <Search className="w-4 h-4 text-slate-500" />
           <input
             type="text"
-            placeholder="Pesquisar SKU, Título ou Col E..."
+            placeholder="Pesquisar SKU, Título ou MLB..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-transparent text-xs text-white focus:outline-none"
@@ -1584,7 +1606,7 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
           </div>
         </div>
         <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-1 shadow-lg border-l-4 border-l-blue-400`}>
-          <div className="text-xs text-slate-400 font-semibold uppercase">Valor Total (Col G)</div>
+          <div className="text-xs text-slate-400 font-semibold uppercase">Valor Total Estimado</div>
           <div className="text-3xl font-black font-mono text-blue-400">
             R$ {filteredProducts.reduce((acc, p) => acc + Number(p.price || 150), 0).toFixed(2)}
           </div>
@@ -1595,53 +1617,48 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
         <div className="p-4 border-b border-slate-800 flex justify-between items-center text-xs font-semibold text-slate-400">
           <span>Relatório Analítico de Anúncios</span>
-          <span className="font-mono text-amber-400">Colunas Mapeadas: A (SKU), D (Título), E (Aplicação), F (Estoque), G (Preço), L (Status)</span>
+          <span className="font-mono text-amber-400">Mapeamento Exato: A (Cód), D (SKU), E (MLB), F (Título), G (Status), L (Data Publicação)</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
-                <th className="p-4">Data Cadastro</th>
-                <th className="p-4">Col A (SKU)</th>
-                <th className="p-4">Col D (Título da Peça)</th>
-                <th className="p-4">Col E (Aplicação / Detalhe)</th>
-                <th className="p-4">Col F (Estoque)</th>
-                <th className="p-4">Col G (Preço R$)</th>
-                <th className="p-4">Col L (Status)</th>
+                <th className="p-4">Col L (Data Pub)</th>
+                <th className="p-4">Col A (Cód. Prod)</th>
+                <th className="p-4">Col D (SKU)</th>
+                <th className="p-4">Col E (Código MLB)</th>
+                <th className="p-4">Col F (Título da Peça)</th>
+                <th className="p-4">Col G (Status)</th>
                 <th className="p-4 text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="p-8 text-center text-slate-500">Nenhum anúncio encontrado para a data ou termo selecionado.</td>
+                  <td colSpan="7" className="p-8 text-center text-slate-500">Nenhum anúncio encontrado para a data ou termo selecionado.</td>
                 </tr>
               ) : (
-                filteredProducts.map((p) => {
-                  const pVarejo = Number(p.price || 150);
-                  return (
-                    <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                      <td className="p-4 font-mono font-bold text-amber-400">{p.date}</td>
-                      <td className="p-4 font-mono font-bold text-slate-200">{p.sku}</td>
-                      <td className="p-4 font-semibold text-slate-100">{p.name}</td>
-                      <td className="p-4 text-blue-400 font-mono">{p.colE || '-'}</td>
-                      <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
-                      <td className="p-4 font-mono font-bold text-emerald-400">R$ {pVarejo.toFixed(2)}</td>
-                      <td className="p-4">
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-bold">{p.colL || 'Ativo'}</span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => onEditProduct(p)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
-                          {currentUser?.role === 'admin' && (
-                            <button onClick={() => onDeleteProduct(p.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                filteredProducts.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                    <td className="p-4 font-mono font-bold text-amber-400">{p.date}</td>
+                    <td className="p-4 font-mono text-slate-300">{p.colA}</td>
+                    <td className="p-4 font-mono font-bold text-slate-200">{p.sku}</td>
+                    <td className="p-4 font-mono text-blue-400">{p.colE}</td>
+                    <td className="p-4 font-semibold text-slate-100">{p.name}</td>
+                    <td className="p-4">
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-bold">{p.colG || 'Ativo'}</span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => onEditProduct(p)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
+                        {currentUser?.role === 'admin' && (
+                          <button onClick={() => onDeleteProduct(p.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -1711,7 +1728,7 @@ function ManageSheetsTab({ products, salesList, onDeleteSheet, onDeleteSalesShee
   );
 }
 
-function ReturnsTab({ returnsList, setReturnsList, darkMode }) {
+function ReturnsTab({ returnsList, setReturnsList, currentUser, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newReturn, setNewReturn] = useState({
@@ -1938,7 +1955,7 @@ function PhotoEditorTab({ darkMode }) {
 
 function ProductModal({ product, onSave, onClose, darkMode }) {
   const [formData, setFormData] = useState(
-    product || { sku: '', mlb: '', name: '', colE: '', status: 'Ativo', price: 150.00, stock: 5, date: new Date().toISOString().slice(0,10), section: 'Mecânica' }
+    product || { sku: '', colA: '', colE: '', colG: 'Ativo', name: '', price: 150.00, stock: 5, date: new Date().toISOString().slice(0,10), section: 'Mecânica' }
   );
 
   const handleSubmit = (e) => {
@@ -1955,27 +1972,27 @@ function ProductModal({ product, onSave, onClose, darkMode }) {
         </div>
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
           <div>
-            <label className="text-slate-400 font-medium">Título (Col D)</label>
+            <label className="text-slate-400 font-medium">Título da Peça (Col F)</label>
             <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-slate-400 font-medium">SKU (Col A)</label>
+              <label className="text-slate-400 font-medium">SKU (Col D)</label>
               <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" required />
             </div>
             <div>
-              <label className="text-slate-400 font-medium">Aplicação (Col E)</label>
+              <label className="text-slate-400 font-medium">Código MLB (Col E)</label>
               <input type="text" value={formData.colE} onChange={(e) => setFormData({ ...formData, colE: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-slate-400 font-medium">Preço (Col G)</label>
-              <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseCurrency(e.target.value) || 150.00 })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono" required />
+              <label className="text-slate-400 font-medium">Cód. Produto (Col A)</label>
+              <input type="text" value={formData.colA} onChange={(e) => setFormData({ ...formData, colA: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
             </div>
             <div>
-              <label className="text-slate-400 font-medium">Estoque (Col F)</label>
-              <input type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-mono" required />
+              <label className="text-slate-400 font-medium">Status (Col G)</label>
+              <input type="text" value={formData.colG} onChange={(e) => setFormData({ ...formData, colG: e.target.value })} className="w-full mt-1 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white" />
             </div>
           </div>
           <div className="pt-3 flex gap-2">
