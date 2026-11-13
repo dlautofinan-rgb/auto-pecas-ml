@@ -3,7 +3,7 @@ import {
   Car, Sun, Moon, Shield, Briefcase, LogOut, BarChart3, FileSpreadsheet,
   Store, TrendingUp, Calculator, MessageSquare, Zap, PieChart, CheckSquare,
   Trash2, HelpCircle, Sparkles, FolderTree, RotateCcw, Image as ImageIcon,
-  RefreshCw, Search, Lock, CheckCircle2, Upload, Edit, Plus, Calendar, Database, X, Send
+  RefreshCw, Search, Lock, CheckCircle2, Upload, Edit, Plus, Calendar, Database, X, Send, Filter
 } from 'lucide-react';
 
 const firebaseConfig = {
@@ -272,7 +272,7 @@ export default function App() {
     if (editingProduct) {
       updated = products.map(p => p.id === editingProduct.id ? { ...finalData, id: p.id } : p);
     } else {
-      updated = [{ ...finalData, id: 'prod_' + Date.now(), curveClass: 'A' }, ...products];
+      updated = [{ ...finalData, id: 'prod_' + Date.now(), date: new Date().toISOString().slice(0, 10), curveClass: 'A' }, ...products];
     }
     updateProducts(updated);
     setIsProductModalOpen(false);
@@ -503,7 +503,6 @@ function MasterInventoryTab({ masterInventory, setMasterInventory, onDeleteMaste
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Coluna A (0): SKU | Coluna D (3): Título | Coluna F (5): Estoque | Coluna H (7): Valor
         const rows = window.XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
         if (rows.length === 0) {
@@ -1101,13 +1100,13 @@ function FaqHelperTab({ products, darkMode }) {
       const qLower = userText.toLowerCase();
 
       if (qLower.includes('ncm')) {
-        aiResponse = '📦 **Consulta NCM (IA):** O NCM padrão recomendado para esta categoria de autopeças no Mercado Livre é **8708.99.90** (Partes e acessórios de veículos automóveis).';
+        aiResponse = '📦 **Consulta NCM (IA):** O NCM padrão recomendado para esta categoria de autopeças no Mercado Livre é **8708.99.90** (Partes e acessórios de veículos automóveis)[cite: 1].';
       } else if (qLower.includes('cest')) {
-        aiResponse = '📊 **Consulta CEST (IA):** O código CEST aplicável para substituição tributária em autopeças geralmente é **01.053.00** (Recomenda-se validar com seu contador conforme o convênio ICMS do seu estado).';
+        aiResponse = '📊 **Consulta CEST (IA):** O código CEST aplicável para substituição tributária em autopeças geralmente é **01.053.00** (Recomenda-se validar com seu contador conforme o convênio ICMS do seu estado)[cite: 1].';
       } else if (qLower.includes('compatibilidade') || qLower.includes('encaixe') || qLower.includes('serve')) {
-        aiResponse = '🚗 **Compatibilidade (IA):** Sim, esta peça possui encaixe perfeito nos modelos correspondentes listados no catálogo OEM. Sugerimos incluir o ano e motorização na resposta ao cliente.';
+        aiResponse = '🚗 **Compatibilidade (IA):** Sim, esta peça possui encaixe perfeito nos modelos correspondentes listados no catálogo OEM. Sugerimos incluir o ano e motorização na resposta ao cliente[cite: 1].';
       } else if (qLower.includes('garantia')) {
-        aiResponse = '🛡️ **Garantia:** Todas as peças novas possuem 3 meses de garantia contra defeitos de fabricação conforme o Código de Defesa do Consumidor.';
+        aiResponse = '🛡️ **Garantia:** Todas as peças novas possuem 3 meses de garantia contra defeitos de fabricação conforme o Código de Defesa do Consumidor[cite: 1].';
       }
 
       setChatHistory([...newHistory, { sender: 'ai', text: aiResponse }]);
@@ -1380,17 +1379,17 @@ function TeamGuideTab({ darkMode }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 text-xs leading-relaxed shadow-xl`}>
           <h3 className="font-bold text-base text-amber-400">1. Significado dos Status no Mercado Livre</h3>
-          <p>• <strong className="text-emerald-400">Ativo:</strong> O anúncio está visível nos resultados de busca, com estoque disponível e pronto para receber vendas imediatas.</p>
-          <p>• <strong className="text-blue-400">Sob Revisão:</strong> O algoritmo de moderação do Mercado Livre está analisando o título, fotos ou compatibilidade da peça para evitar duplicidade ou infração de marca.</p>
-          <p>• <strong className="text-amber-400">Pausado:</strong> O estoque da peça zerou automaticamente ou o anúncio foi pausado manualmente pelo operador. Necessita reposição de estoque para reativar.</p>
-          <p>• <strong className="text-red-400">Finalizado:</strong> O anúncio foi encerrado definitivamente por expiração de prazo ou exclusão manual. Requer recriação.</p>
+          <p>• <strong className="text-emerald-400">Ativo:</strong> O anúncio está visível nos resultados de busca, com estoque disponível e pronto para receber vendas imediatas[cite: 1].</p>
+          <p>• <strong className="text-blue-400">Sob Revisão:</strong> O algoritmo de moderação do Mercado Livre está analisando o título, fotos ou compatibilidade da peça para evitar duplicidade ou infração de marca[cite: 1].</p>
+          <p>• <strong className="text-amber-400">Pausado:</strong> O estoque da peça zerou automaticamente ou o anúncio foi pausado manualmente pelo operador. Necessita reposição de estoque para reativar[cite: 1].</p>
+          <p>• <strong className="text-red-400">Finalizado:</strong> O anúncio foi encerrado definitivamente por expiração de prazo ou exclusão manual. Requer recriação[cite: 1].</p>
         </div>
 
         <div className={`p-6 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} space-y-4 text-xs leading-relaxed shadow-xl`}>
           <h3 className="font-bold text-base text-blue-400">2. Boas Práticas de Atendimento & Envio</h3>
-          <p>• <strong>Prazo de Postagem:</strong> Pedidos aprovados até às 14h devem ser despachados no mesmo dia útil para manter a reputação Verde-Claro / Termômetro Excelente.</p>
-          <p>• <strong>Embalagem de Autopeças:</strong> Utilize plástico bolha reforçado e caixas de papelão rígido. Peças metálicas e coletores devem ser fixados para evitar danos no transporte Flex ou Full.</p>
-          <p>• <strong>Perguntas e Respostas:</strong> Responda às dúvidas sobre aplicação e compatibilidade em até 15 minutos para maximizar a taxa de conversão da loja.</p>
+          <p>• <strong>Prazo de Postagem:</strong> Pedidos aprovados até às 14h devem ser despachados no mesmo dia útil para manter a reputação Verde-Claro / Termômetro Excelente[cite: 1].</p>
+          <p>• <strong>Embalagem de Autopeças:</strong> Utilize plástico bolha reforçado e caixas de papelão rígido. Peças metálicas e coletores devem ser fixados para evitar danos no transporte Flex ou Full[cite: 1].</p>
+          <p>• <strong>Perguntas e Respostas:</strong> Responda às dúvidas sobre aplicação e compatibilidade em até 15 minutos para maximizar a taxa de conversão da loja[cite: 1].</p>
         </div>
       </div>
     </div>
@@ -1740,6 +1739,7 @@ function SalesDashboardTab({ salesList, setSalesList, products, currentUser, dar
 
 function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEditProduct, onDeleteProduct, darkMode }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDateFilter, setSelectedDateFilter] = useState('');
   const [importStatus, setImportStatus] = useState('');
 
   const handleFileUpload = (e) => {
@@ -1765,7 +1765,6 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Coluna A (0): SKU | Coluna D (3): Título | Coluna F (5): Estoque | Coluna H (7): Valor
         const rows = window.XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
         if (rows.length === 0) {
@@ -1818,14 +1817,21 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
     reader.readAsArrayBuffer(file);
   };
 
-  const filteredProducts = products.filter(p => (p.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || (p.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase()));
+  // Coleta datas disponíveis para o seletor de filtro
+  const availableDates = Array.from(new Set(products.map(p => p.date || new Date().toISOString().slice(0, 10)))).sort().reverse();
+
+  const filteredProducts = products.filter(p => {
+    const matchSearch = (p.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || (p.sku?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    const matchDate = !selectedDateFilter || p.date === selectedDateFilter;
+    return matchSearch && matchDate;
+  });
 
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Importar Peças & Anúncios (Colunas A, D, F, H)</h2>
-          <p className="text-sm text-slate-400">Extração exata: Coluna A (SKU), Coluna D (Título), Coluna F (Estoque), Coluna H (Valor).</p>
+          <h2 className="text-2xl font-bold tracking-tight">Importar Peças & Anúncios (Filtragem por Data)</h2>
+          <p className="text-sm text-slate-400">Filtre por data para saber exatamente quantos anúncios foram feitos em cada dia.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -1849,11 +1855,48 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
         </div>
       )}
 
+      {/* Painel de Filtro por Data e Busca */}
+      <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl`}>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Filter className="w-4 h-4 text-amber-400" />
+          <span className="text-xs font-semibold text-slate-400">Filtrar Anúncios por Data:</span>
+          <select
+            value={selectedDateFilter}
+            onChange={(e) => setSelectedDateFilter(e.target.value)}
+            className="bg-slate-800 text-white text-xs font-mono font-bold px-3 py-2 rounded-xl border border-slate-700 focus:outline-none"
+          >
+            <option value="">📅 Todas as Datas (Histórico Completo)</option>
+            {availableDates.map(d => (
+              <option key={d} value={d}>📅 {d} ({products.filter(p => p.date === d).length} anúncios)</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-72 bg-slate-800/60 px-3 py-2 rounded-xl border border-slate-700">
+          <Search className="w-4 h-4 text-slate-500" />
+          <input
+            type="text"
+            placeholder="Buscar SKU ou Título..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-transparent text-xs text-white focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-2 text-xs text-slate-400 font-semibold">
+        <span>Exibindo: <strong className="text-amber-400 font-mono">{filteredProducts.length}</strong> anúncios encontrados {selectedDateFilter ? `para a data ${selectedDateFilter}` : 'no total'}</span>
+        {selectedDateFilter && (
+          <button onClick={() => setSelectedDateFilter('')} className="text-blue-400 hover:underline">Limpar Filtro de Data</button>
+        )}
+      </div>
+
       <div className={`rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} overflow-hidden shadow-xl`}>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-800/40 text-xs text-slate-400 uppercase font-semibold border-b border-slate-800">
               <tr>
+                <th className="p-4">Data do Anúncio</th>
                 <th className="p-4">Col A / D (SKU & Título)</th>
                 <th className="p-4">Seção</th>
                 <th className="p-4">Col F (Estoque)</th>
@@ -1862,35 +1905,44 @@ function ImportExcelTab({ products, setProducts, currentUser, onAddProduct, onEd
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/50 text-xs">
-              {filteredProducts.map((p) => {
-                const pVarejo = Number(p.price || 150);
-                const pAtacado = Number(p.wholesalePrice || (pVarejo * 0.85));
-                const analysis = aiAnalyzeAutoPart(p.name);
-                return (
-                  <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
-                    <td className="p-4">
-                      <div className="font-bold text-amber-400 font-mono">SKU: {p.sku}</div>
-                      <div className="font-semibold text-slate-200 mt-0.5">{p.name}</div>
-                    </td>
-                    <td className="p-4">
-                      <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold">{analysis.section}</span>
-                    </td>
-                    <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
-                    <td className="p-4 font-mono">
-                      <div className="font-bold text-emerald-400">Varejo: R$ {pVarejo.toFixed(2)}</div>
-                      <div className="text-blue-400 text-[11px]">Atacado (4+): R$ {pAtacado.toFixed(2)}</div>
-                    </td>
-                    <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => onEditProduct(p)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
-                        {currentUser?.role === 'admin' && (
-                          <button onClick={() => onDeleteProduct(p.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-slate-500">Nenhum anúncio encontrado para esta data ou termo de busca.</td>
+                </tr>
+              ) : (
+                filteredProducts.map((p) => {
+                  const pVarejo = Number(p.price || 150);
+                  const pAtacado = Number(p.wholesalePrice || (pVarejo * 0.85));
+                  const analysis = aiAnalyzeAutoPart(p.name);
+                  return (
+                    <tr key={p.id} className="hover:bg-slate-800/20 transition-colors">
+                      <td className="p-4 font-mono font-bold text-amber-400">
+                        {p.date || '2026-11-10'}
+                      </td>
+                      <td className="p-4">
+                        <div className="font-bold text-slate-100 font-mono">SKU: {p.sku}</div>
+                        <div className="font-semibold text-slate-300 mt-0.5">{p.name}</div>
+                      </td>
+                      <td className="p-4">
+                        <span className="px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold">{analysis.section}</span>
+                      </td>
+                      <td className="p-4 font-mono text-slate-300">{p.stock || 5} un</td>
+                      <td className="p-4 font-mono">
+                        <div className="font-bold text-emerald-400">Varejo: R$ {pVarejo.toFixed(2)}</div>
+                        <div className="text-blue-400 text-[11px]">Atacado (4+): R$ {pAtacado.toFixed(2)}</div>
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button onClick={() => onEditProduct(p)} className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
+                          {currentUser?.role === 'admin' && (
+                            <button onClick={() => onDeleteProduct(p.id)} className="p-1.5 hover:bg-red-500/20 rounded-lg text-red-400" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
